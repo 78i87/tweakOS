@@ -11,6 +11,7 @@
   /* Dark Brown Theme Colors */
   --dark-brown-surface: #3D2F2A;  /* dark brown for windows/dock */
   --dark-brown-text: #F4EFE7;     /* light beige text for dark surfaces */
+  --dark-brown-color: #2F2A22;    /* dark brown text color */
   --dark-brown-border: #2A1F1B;   /* darker brown borders */
   --dark-brown-accent: #5A4A42;   /* lighter brown accent */
 
@@ -227,6 +228,6 @@ textarea::placeholder {
 
 /* Override placeholder color for prompt bar */
 .prompt-bar-textarea::placeholder {
-  color: rgba(244, 239, 231, 0.6) !important;
+  color: rgba(47, 42, 34, 0.6) !important;
   opacity: 1 !important;
 }

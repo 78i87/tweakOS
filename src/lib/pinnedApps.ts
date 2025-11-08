@@ -13,6 +13,6 @@ export const pinnedApps: PinnedAppConfig[] = [
   },
   {
     appId: 'terminal',
-    defaultPosition: { x: 120, y: 32 },
+    defaultPosition: { x: 160, y: 32 },
   },
 ];

@@ -67,7 +67,7 @@ export default function DesktopAppIcon({
     }
   };
 
-  const iconSize = 40;
+  const iconSize = 56;
   const iconNode = (() => {
     if (React.isValidElement(app.icon)) {
       return React.cloneElement(app.icon, { size: iconSize });
@@ -92,7 +92,7 @@ export default function DesktopAppIcon({
         className="flex flex-col items-center gap-1 p-2 rounded transition-colors hover:bg-white/10 active:bg-white/5 cursor-move"
         aria-label={app.title}
       >
-        <div className="w-16 h-16 flex items-center justify-center text-[#2F2A22]">
+        <div className="w-20 h-20 flex items-center justify-center text-[#2F2A22]">
           {iconNode}
         </div>
         <span

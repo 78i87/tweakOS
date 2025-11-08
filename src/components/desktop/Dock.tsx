@@ -29,12 +29,16 @@ export default function Dock() {
       return entries;
     }
 
-    entries.push({
-      appId,
-      title: app.title,
-      icon: app.icon,
-      window: runningWindowMap.get(appId),
-    });
+    const window = runningWindowMap.get(appId);
+    // Only include pinned apps that have open windows
+    if (window) {
+      entries.push({
+        appId,
+        title: app.title,
+        icon: app.icon,
+        window,
+      });
+    }
 
     return entries;
   }, []);
@@ -71,19 +75,19 @@ export default function Dock() {
   };
 
   return (
-    <div className="fixed right-4 top-1/2 -translate-y-1/2 z-[100] flex flex-col gap-2">
+    <div className="fixed right-4 top-1/2 -translate-y-1/2 z-[100] flex flex-col gap-4">
       {dockEntries.map(({ appId, title, icon, window }) => (
         <button
           key={appId}
           onClick={() => handleAppClick(appId)}
           className={clsx(
-            'neu-button w-12 h-12 flex items-center justify-center p-0',
+            'neu-button w-16 h-16 flex items-center justify-center p-0',
             window?.status === 'minimized' && 'opacity-60'
           )}
           aria-label={title}
           style={{ color: 'var(--neu-text)' }}
         >
-          <span style={{ color: 'var(--neu-text)' }}>{icon || <FileText size={20} />}</span>
+          <span style={{ color: 'var(--neu-text)' }}>{icon || <FileText size={28} />}</span>
         </button>
       ))}
     </div>

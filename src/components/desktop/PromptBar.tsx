@@ -234,8 +234,8 @@ export default function PromptBar() {
                 isLoading && 'opacity-50 cursor-not-allowed animate-pulse'
               )}
               style={{ 
-                color: 'var(--dark-brown-text)',
-                caretColor: 'var(--dark-brown-text)',
+                color: 'var(--dark-brown-color)',
+                caretColor: 'var(--dark-brown-color)',
                 maxHeight: '200px' 
               }}
             />
