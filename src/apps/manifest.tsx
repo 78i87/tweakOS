@@ -15,7 +15,7 @@ const defaultApps: AppDefinition[] = [
   {
     appId: 'terminal',
     title: 'Terminal',
-    icon: <TerminalSquare size={20} />,
+    icon: <TerminalSquare size={28} />,
     component: TerminalApp,
   },
 ];

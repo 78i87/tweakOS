@@ -21,7 +21,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build context string
     let contextStr = `Current working directory: ${context?.cwd || '/'}\n\n`;
     
     if (context?.history && context.history.length > 0) {
@@ -30,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     if (context?.fs && Array.isArray(context.fs)) {
       contextStr += `Filesystem snapshot:\n`;
-      const fsItems = context.fs.slice(0, 50); // Limit to 50 items
+      const fsItems = context.fs.slice(0, 50);
       for (const item of fsItems) {
         if (item.type === 'file') {
           contextStr += `  FILE: ${item.path} (${item.size || 0} bytes)`;
@@ -45,7 +44,6 @@ export async function POST(request: NextRequest) {
       contextStr += '\n';
     }
 
-    // Build conversation history (excluding the last user message which we'll add separately)
     let conversationText = '';
     for (let i = 0; i < messages.length - 1; i++) {
       const msg = messages[i];

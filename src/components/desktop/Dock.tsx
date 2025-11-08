@@ -87,7 +87,14 @@ export default function Dock() {
           aria-label={title}
           style={{ color: 'var(--neu-text)' }}
         >
-          <span style={{ color: 'var(--neu-text)' }}>{icon || <FileText size={28} />}</span>
+          <span 
+            style={{ 
+              color: 'var(--neu-text)',
+              ...(appId.startsWith('html-') && { transform: 'translate(-1px, 2px)' })
+            }}
+          >
+            {icon || <FileText size={28} />}
+          </span>
         </button>
       ))}
     </div>

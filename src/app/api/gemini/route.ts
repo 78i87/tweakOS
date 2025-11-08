@@ -5,15 +5,13 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 if (!GEMINI_API_KEY) {
   throw new Error('GEMINI_API_KEY environment variable is required');
 }
-const PRIMARY_MODEL = 'gemini-2.5-pro';
+const PRIMARY_MODEL = 'gemini-2.5-flash';
 const FALLBACK_MODEL = 'gemini-2.5-flash';
 
-// Initialize the Gemini client
 const genAI = new GoogleGenAI({
   apiKey: GEMINI_API_KEY,
 });
 
-// JSON Schema for structured output
 const responseSchema = {
   type: 'object',
   properties: {
@@ -58,10 +56,18 @@ Requirements:
 2. CSS can be applied in two ways:
    - Inline styles using the "style" attribute on HTML elements (preferred for simple styling)
    - CSS rules in <style> tags (use for complex styling, animations, media queries, or when styling multiple elements)
-3. Make it visually appealing with modern styling - use colors, spacing, typography, and layout effectively
-4. Ensure it's fully functional and interactive
+3. STYLING REQUIREMENTS - Pay close attention to any style descriptions in the user's request:
+   - If the user mentions a specific style (e.g., "dark theme", "minimalist", "retro", "modern", "colorful", "gradient", "glassmorphism", "neon", etc.), you MUST incorporate that exact style into your design
+   - Match color schemes, visual aesthetics, and design patterns mentioned in the prompt
+   - Use colors, spacing, typography, and layout that align with the requested style
+   - If no specific style is mentioned, use modern, visually appealing styling
+4. INTERACTIVITY REQUIREMENTS - Make the application interactive and engaging:
+   - If the user's request involves any form of interaction (buttons, forms, animations, games, calculators, etc.), include full JavaScript functionality
+   - Add interactive elements even if not explicitly requested - make buttons clickable, forms functional, and add hover effects, transitions, or animations where appropriate
+   - Include event handlers, state management, and user feedback mechanisms
+   - Ensure all interactive features work smoothly and provide visual feedback
 5. Use modern web technologies and best practices
-6. Include all necessary JavaScript for interactivity
+6. Include all necessary JavaScript for interactivity - don't leave placeholders or incomplete functionality
 7. The HTML must be valid and renderable directly
 8. If using <style> tags, place them at the beginning of your HTML content
 9. Ensure all CSS is properly formatted and will apply correctly
@@ -77,7 +83,6 @@ Generate the app now:`;
     let response;
     let modelUsed = PRIMARY_MODEL;
     
-    // Try primary model first, fallback to flash if it fails
     try {
       console.log('[GEMINI API] Attempting with model:', PRIMARY_MODEL);
       response = await genAI.models.generateContent({
@@ -90,6 +95,9 @@ Generate the app now:`;
           topK: 40,
           topP: 0.95,
           maxOutputTokens: 8192,
+          thinkingConfig: {
+            thinkingBudget: 0,
+          },
         },
       });
       console.log(`[GEMINI API] Successfully used ${PRIMARY_MODEL}`);
@@ -109,6 +117,9 @@ Generate the app now:`;
             topK: 40,
             topP: 0.95,
             maxOutputTokens: 8192,
+            thinkingConfig: {
+              thinkingBudget: 0,
+            },
           },
         });
         console.log(`[GEMINI API] Successfully used fallback model ${FALLBACK_MODEL}`);
@@ -121,27 +132,23 @@ Generate the app now:`;
     const apiRequestTime = Date.now() - apiRequestStart;
     console.log(`[GEMINI API] API request completed in ${apiRequestTime}ms using model: ${modelUsed}`);
 
-    // Extract the response text
     const responseText = response.text;
     if (!responseText) {
       throw new Error('No response text received from Gemini API');
     }
     console.log('[GEMINI API] Response received, length:', responseText.length);
     
-    // Parse JSON response (should be valid JSON due to structured output)
     const parseStart = Date.now();
     let parsed;
     try {
       parsed = JSON.parse(responseText);
     } catch (parseError) {
       console.error('[GEMINI API] JSON parse error:', parseError);
-      // Fallback parsing
       parsed = parseGeminiResponse(responseText, prompt);
     }
     
     const parseTime = Date.now() - parseStart;
     
-    // Validate response structure
     if (!parsed.title || !parsed.html) {
       console.error('[GEMINI API] Invalid response structure:', parsed);
       return NextResponse.json(
@@ -150,7 +157,6 @@ Generate the app now:`;
       );
     }
     
-    // Clean up HTML (unescape if needed)
     let html = parsed.html;
     if (typeof html === 'string') {
       html = html
@@ -199,22 +205,17 @@ function parseGeminiResponse(text: string, originalPrompt: string): { title: str
   console.log('[PARSE] Starting to parse Gemini response');
   console.log('[PARSE] Raw text length:', text.length);
   
-  // Try to extract JSON from the response
   let cleanedText = text.trim();
   
-  // Remove markdown code blocks
   const beforeClean = cleanedText;
   cleanedText = cleanedText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
   if (beforeClean !== cleanedText) {
     console.log('[PARSE] Removed markdown code blocks');
   }
   
-  // Try to find JSON object - be more aggressive
   let jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
   
-  // If no match, try to find JSON that might have leading/trailing text
   if (!jsonMatch) {
-    // Try to find JSON starting from first {
     const firstBrace = cleanedText.indexOf('{');
     const lastBrace = cleanedText.lastIndexOf('}');
     if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
@@ -237,15 +238,12 @@ function parseGeminiResponse(text: string, originalPrompt: string): { title: str
       console.log('[PARSE] HTML preview (first 300 chars):', parsed.html?.substring(0, 300));
       
       if (parsed.title && parsed.html) {
-        // Handle escaped HTML strings - if HTML contains escaped newlines, unescape them
         let html = parsed.html;
         
-        // Check if HTML is just whitespace or empty
         if (!html.trim() || html.trim().length < 10) {
           console.warn('[PARSE] HTML is empty or too short, using fallback');
           html = generateFallbackHTML(parsed.title, originalPrompt);
         } else {
-          // Unescape common escape sequences
           html = html
             .replace(/\\n/g, '\n')
             .replace(/\\t/g, '\t')
@@ -272,7 +270,6 @@ function parseGeminiResponse(text: string, originalPrompt: string): { title: str
     console.warn('[PARSE] No JSON match found in response');
   }
   
-  // Fallback: if JSON parsing fails, try to extract HTML directly
   console.log('[PARSE] Trying HTML extraction fallback');
   const htmlMatch = cleanedText.match(/<html[\s\S]*<\/html>/i) || cleanedText.match(/<div[\s\S]*<\/div>/i);
   
@@ -286,7 +283,6 @@ function parseGeminiResponse(text: string, originalPrompt: string): { title: str
     };
   }
   
-  // Last resort: wrap the entire response in HTML
   console.log('[PARSE] Using last resort fallback');
   const title = extractTitle(originalPrompt);
   return {

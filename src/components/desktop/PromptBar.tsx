@@ -22,10 +22,7 @@ export default function PromptBar() {
   const didDragRef = useRef(false);
   const dragStartPositionRef = useRef({ x: 0, y: 0 });
   
-  // Get placeholder text (reactive to localStorage changes)
   const placeholderText = getPromptPlaceholder();
-  
-  // Animate placeholder text when overlay is shown
   const animatedPlaceholderText = useAnimatedText(
     placeholderText,
     showOverlay && isModalOpen,
@@ -34,15 +31,12 @@ export default function PromptBar() {
 
   useEffect(() => {
     if (!isModalOpen) {
-      // Reset overlay when modal closes
       setShowOverlay(true);
     }
   }, [isModalOpen]);
 
-  // Focus input when modal opens
   useEffect(() => {
     if (isModalOpen && inputRef.current && showOverlay) {
-      // Small delay to ensure modal is rendered
       setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus();
@@ -178,7 +172,6 @@ export default function PromptBar() {
       return;
     }
     setIsModalOpen(true);
-    // Focus textarea immediately to show caret
     setTimeout(() => {
       if (inputRef.current) {
         inputRef.current.focus();
@@ -261,7 +254,7 @@ export default function PromptBar() {
           className="fixed z-[100] transition-all duration-300 ease-out"
           style={{
             top: `${blobPosition.y + 40}px`,
-            right: `${window.innerWidth - blobPosition.x - 80}px`,
+            right: `${window.innerWidth - blobPosition.x - -30}px`,
             transform: 'translateY(-50%)',
           }}
         >
@@ -281,7 +274,7 @@ export default function PromptBar() {
                   'bg-transparent border-0 outline-none',
                   'text-xl font-bold tracking-wide',
                   'placeholder:text-gray-400',
-                  'min-w-[300px] max-w-[500px]',
+                  'min-w-[200px] max-w-[350px]',
                   'resize-none overflow-y-auto',
                   'transition-all duration-200',
                   'leading-relaxed',

@@ -64,7 +64,7 @@ export function makeAppFromHTML(args: { title: string; html: string }): void {
     registerApp({
       appId,
       title: args.title,
-      icon: React.createElement(CloudIcon, { size: 20 }),
+      icon: React.createElement(CloudIcon, { size: 28 }),
       component: HTMLApp,
     });
     
