@@ -18,7 +18,7 @@ export default function Home() {
   const [terminalWindowCentered, setTerminalWindowCentered] = useState(false);
   const [overlayRevealing, setOverlayRevealing] = useState(false);
   const { openAppWindow } = useAppRegistry();
-  const { updateWindowPosition, updateWindowSize } = useWindowActions();
+  const { updateWindowPosition, updateWindowSize, closeWindow } = useWindowActions();
   const windows = useWindows();
 
   useEffect(() => {
@@ -30,6 +30,30 @@ export default function Home() {
       setShowDesktopUI(true);
     }
   }, []);
+
+  useEffect(() => {
+    // Handle F key to skip intro
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (showIntro && (e.key === 'F' || e.key === 'f')) {
+        e.preventDefault();
+        localStorage.setItem('introSeen', 'true');
+        setShowIntro(false);
+        setShowDesktopUI(true);
+        // Close any terminal window that might have been opened
+        const terminalWindow = windows.find(
+          (w) => w.appId === 'terminal' && w.data?.fromIntro
+        );
+        if (terminalWindow) {
+          closeWindow(terminalWindow.id);
+        }
+      }
+    };
+
+    if (showIntro) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [showIntro, windows, closeWindow]);
 
   useEffect(() => {
     // Find terminal window opened from intro and center it (only once)
@@ -67,6 +91,18 @@ export default function Home() {
           setShowDesktopUI(true);
           localStorage.setItem('introSeen', 'true');
         }, 4000);
+      },
+      onSkipIntro: () => {
+        // Skip intro immediately - close terminal, hide overlay, show desktop
+        const terminalWindow = windows.find(
+          (w) => w.appId === 'terminal' && w.data?.fromIntro
+        );
+        if (terminalWindow) {
+          closeWindow(terminalWindow.id);
+        }
+        localStorage.setItem('introSeen', 'true');
+        setShowIntro(false);
+        setShowDesktopUI(true);
       },
     });
   };

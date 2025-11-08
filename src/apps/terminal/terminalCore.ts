@@ -8,7 +8,28 @@ export type CommandResult = {
   clear?: boolean;
 };
 
-function parseCommand(input: string): { command: string; args: string[] } {
+// Export known commands for checking if input is a command
+export const KNOWN_COMMANDS = new Set([
+  'help',
+  'pwd',
+  'ls',
+  'cd',
+  'mkdir',
+  'rmdir',
+  'touch',
+  'cat',
+  'echo',
+  'write',
+  'read',
+  'rm',
+  'mv',
+  'cp',
+  'date',
+  'uname',
+  'clear',
+]);
+
+export function parseCommand(input: string): { command: string; args: string[] } {
   const trimmed = input.trim();
   if (!trimmed) {
     return { command: '', args: [] };
