@@ -1,18 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  /* Neumorphism Theme Colors */
-  --neu-bg: #e0e5ec;
-  --neu-surface: #e0e5ec;
-  --neu-text: #2d3436;
-  --neu-shadow-light: #ffffff;
-  --neu-shadow-dark: #a3b1c6;
-  
-  /* Shadows for Neumorphism */
-  --neu-shadow-sm: 3px 3px 6px var(--neu-shadow-dark), -3px -3px 6px var(--neu-shadow-light);
-  --neu-shadow-md: 6px 6px 12px var(--neu-shadow-dark), -6px -6px 12px var(--neu-shadow-light);
-  --neu-shadow-lg: 9px 9px 18px var(--neu-shadow-dark), -9px -9px 18px var(--neu-shadow-light);
-  --neu-shadow-inset: inset 3px 3px 6px var(--neu-shadow-dark), inset -3px -3px 6px var(--neu-shadow-light);
+  /* Beige Minimal Theme Colors */
+  --beige-bg: #F4EFE7;           /* background canvas */
+  --beige-surface: #FFFDF9;      /* surfaces/windows */
+  --beige-text: #2F2A22;         /* primary text */
+  --beige-border: #E8E2D9;       /* subtle borders */
+  --beige-accent: #CDBFAE;       /* gentle accent */
+
+  --neu-bg: var(--beige-bg);
+  --neu-surface: var(--beige-surface);
+  --neu-text: var(--beige-text);
+
+  /* softer, minimal shadows */
+  --neu-shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --neu-shadow-md: 0 8px 24px rgba(0,0,0,0.08);
+  --neu-shadow-lg: 0 16px 40px rgba(0,0,0,0.12);
+  --neu-shadow-inset: inset 0 0 0 1px var(--beige-border);
   
   /* Radius */
   --neu-radius: 16px;
@@ -55,27 +59,100 @@ body {
 .neu-surface {
   background: var(--neu-surface);
   box-shadow: var(--neu-shadow-md);
+  border: 1px solid var(--beige-border);
   border-radius: var(--neu-radius);
 }
 
 .neu-surface-inset {
   background: var(--neu-surface);
-  box-shadow: var(--neu-shadow-inset);
+  box-shadow: none;
+  border: 1px solid var(--beige-border);
   border-radius: var(--neu-radius);
 }
 
 .neu-button {
   background: var(--neu-surface);
-  box-shadow: var(--neu-shadow-sm);
+  border: 1px solid var(--beige-border);
   border-radius: var(--neu-radius-sm);
-  transition: all 0.2s ease;
+  box-shadow: var(--neu-shadow-sm);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .neu-button:hover {
-  box-shadow: var(--neu-shadow-inset);
+  background-color: rgba(0,0,0,0.02);
 }
 
 .neu-button:active {
   box-shadow: var(--neu-shadow-inset);
-  transform: scale(0.98);
+  transform: none;
+}
+
+/* Window resize handles */
+.window-resize-handle {
+  position: absolute;
+  z-index: 5;
+}
+
+.window-resize-handle.n {
+  top: -4px;
+  left: 10px;
+  right: 10px;
+  height: 8px;
+  cursor: n-resize;
+}
+
+.window-resize-handle.s {
+  bottom: -4px;
+  left: 10px;
+  right: 10px;
+  height: 8px;
+  cursor: s-resize;
+}
+
+.window-resize-handle.e {
+  right: -4px;
+  top: 10px;
+  bottom: 10px;
+  width: 8px;
+  cursor: e-resize;
+}
+
+.window-resize-handle.w {
+  left: -4px;
+  top: 10px;
+  bottom: 10px;
+  width: 8px;
+  cursor: w-resize;
+}
+
+.window-resize-handle.ne {
+  right: -4px;
+  top: -4px;
+  width: 12px;
+  height: 12px;
+  cursor: ne-resize;
+}
+
+.window-resize-handle.se {
+  right: -4px;
+  bottom: -4px;
+  width: 12px;
+  height: 12px;
+  cursor: se-resize;
+}
+
+.window-resize-handle.sw {
+  left: -4px;
+  bottom: -4px;
+  width: 12px;
+  height: 12px;
+  cursor: sw-resize;
+}
+
+.window-resize-handle.nw {
+  left: -4px;
+  top: -4px;
+  width: 12px;
+  height: 12px;
+  cursor: nw-resize;
 }

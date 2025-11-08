@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Rnd } from 'react-rnd';
 import { X, Minus, Maximize2, Square } from 'lucide-react';
-import { useWindowStore } from '@/lib/windowStore';
+import { useWindowActions } from '@/lib/useWindowActions';
 import { WindowState } from '@/lib/types';
 import { getApp } from '@/lib/appRegistry';
 import clsx from 'clsx';
@@ -23,7 +23,7 @@ export default function Window({ window: windowState }: WindowProps) {
     focusWindow,
     updateWindowPosition,
     updateWindowSize,
-  } = useWindowStore();
+  } = useWindowActions();
 
   const app = getApp(windowState.appId);
   if (!app) return null;
@@ -50,6 +50,14 @@ export default function Window({ window: windowState }: WindowProps) {
 
   const handleFocus = () => {
     focusWindow(windowState.id);
+  };
+
+  const handleDragStart = () => {
+    handleFocus();
+  };
+
+  const handleResizeStart = () => {
+    handleFocus();
   };
 
   const handleMinimize = () => {
@@ -97,22 +105,43 @@ export default function Window({ window: windowState }: WindowProps) {
       position={isMaximized ? { x: 0, y: 0 } : windowState.position}
       onDragStop={handleDragStop}
       onResizeStop={handleResizeStop}
+      onDragStart={handleDragStart}
+      onResizeStart={handleResizeStart}
       minWidth={300}
       minHeight={200}
       enableResizing={!isMaximized}
       disableDragging={isMaximized}
+      dragHandleClassName="window-drag-handle"
+      bounds="window"
+      resizeHandleComponent={{
+        top: <div className="window-resize-handle n" />,
+        right: <div className="window-resize-handle e" />,
+        bottom: <div className="window-resize-handle s" />,
+        left: <div className="window-resize-handle w" />,
+        topRight: <div className="window-resize-handle ne" />,
+        bottomRight: <div className="window-resize-handle se" />,
+        bottomLeft: <div className="window-resize-handle sw" />,
+        topLeft: <div className="window-resize-handle nw" />,
+      }}
       style={{
         zIndex: windowState.zIndex,
         display: 'flex',
         flexDirection: 'column',
+        overflow: 'hidden',
+        borderRadius: isMaximized ? '0' : '16px',
       }}
       className={clsx('neu-surface', isMaximized && 'fixed inset-0')}
-      onMouseDown={handleFocus}
     >
       {/* Window Title Bar */}
       <div
-        className="flex items-center justify-between px-4 py-2 cursor-move select-none"
-        style={{ minHeight: '40px' }}
+        className="window-drag-handle flex items-center justify-between px-4 py-2 cursor-move select-none"
+        style={{ 
+          minHeight: '40px', 
+          background: 'var(--neu-surface)', 
+          borderBottom: '1px solid var(--beige-border)',
+          borderTopLeftRadius: isMaximized ? '0' : '16px',
+          borderTopRightRadius: isMaximized ? '0' : '16px'
+        }}
         onDoubleClick={handleMaximize}
       >
         <div className="flex items-center gap-2">
@@ -151,4 +180,3 @@ export default function Window({ window: windowState }: WindowProps) {
     </Rnd>
   );
 }
-
