@@ -42,7 +42,17 @@ export function openAppWindow(appId: string, data?: any): void {
     console.warn(`App ${appId} not found in registry`);
     return;
   }
-  const { openWindow } = useWindowStore.getState();
+  const { windows, openWindow, focusWindow, restoreWindow } = useWindowStore.getState();
+  const existingWindow = windows.find((w) => w.appId === appId);
+
+  if (existingWindow) {
+    if (existingWindow.status === 'minimized') {
+      restoreWindow(existingWindow.id);
+    }
+    focusWindow(existingWindow.id);
+    return;
+  }
+
   openWindow(appId, app.title, data);
 }
 
@@ -61,4 +71,3 @@ export function makeAppFromHTML(args: { title: string; html: string }): void {
     openAppWindow(appId, { html: args.html });
   });
 }
-

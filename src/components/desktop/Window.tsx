@@ -122,7 +122,7 @@ export default function Window({ window: windowState }: WindowProps) {
         zIndex: windowState.zIndex,
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden',
+        overflow: 'visible',
         borderRadius: isMaximized ? '0' : '16px',
       }}
       className={clsx('neu-surface', isMaximized && 'fixed inset-0')}
@@ -132,15 +132,16 @@ export default function Window({ window: windowState }: WindowProps) {
         style={{ 
           minHeight: '40px', 
           background: 'var(--neu-surface)', 
-          borderBottom: '1px solid var(--beige-border)',
+          borderBottom: '1px solid var(--dark-brown-border)',
           borderTopLeftRadius: isMaximized ? '0' : '16px',
-          borderTopRightRadius: isMaximized ? '0' : '16px'
+          borderTopRightRadius: isMaximized ? '0' : '16px',
+          color: 'var(--neu-text)'
         }}
         onDoubleClick={handleMaximize}
       >
         <div className="flex items-center gap-2" style={{ paddingLeft: '12px' }}>
           {app.icon && <span className="w-4 h-4">{app.icon}</span>}
-          <span className="text-sm font-medium">{windowState.title}</span>
+          <span className="text-sm font-medium" style={{ color: 'var(--neu-text)' }}>{windowState.title}</span>
         </div>
         <div className="flex items-center gap-1.5" style={{ marginRight: '12px' }}>
           <button
@@ -167,7 +168,13 @@ export default function Window({ window: windowState }: WindowProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden">
+      <div 
+        className="flex-1 overflow-hidden"
+        style={{
+          borderBottomLeftRadius: isMaximized ? '0' : '16px',
+          borderBottomRightRadius: isMaximized ? '0' : '16px',
+        }}
+      >
         <AppComponent windowId={windowState.id} initialData={windowState.data} />
       </div>
     </Rnd>

@@ -151,15 +151,15 @@ export default function TerminalApp({ windowId }: AppComponentProps) {
   };
 
   return (
-    <div className="w-full h-full flex min-h-0" style={{ background: 'transparent' }}>
+    <div className="w-full h-full flex min-h-0" style={{ background: 'var(--dark-brown-surface)' }}>
       {/* Terminal - 70% */}
-      <div className="flex-[7] min-w-0 min-h-0 flex flex-col border-r border-[var(--beige-border)]">
-        <div className="flex-1 min-h-0 overflow-y-auto p-4 font-mono text-sm" style={{ color: 'var(--beige-text)' }}>
+      <div className="flex-[7] min-w-0 min-h-0 flex flex-col border-r" style={{ borderColor: 'var(--dark-brown-border)' }}>
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 font-mono text-sm" style={{ color: 'var(--dark-brown-text)' }}>
           {history.map((entry, idx) => (
             <div key={idx} className="mb-2">
               {entry.command && (
                 <div className="mb-1">
-                  <span style={{ color: '#4a9eff' }}>$</span>{' '}
+                  <span style={{ color: '#7BB3FF' }}>$</span>{' '}
                   <span>{entry.command}</span>
                 </div>
               )}
@@ -174,8 +174,8 @@ export default function TerminalApp({ windowId }: AppComponentProps) {
           ))}
           <div ref={terminalEndRef} />
         </div>
-        <div className="border-t border-[var(--beige-border)] p-2 flex items-center gap-2">
-          <span style={{ color: '#4a9eff' }}>$</span>
+        <div className="border-t p-2 flex items-center gap-2" style={{ borderColor: 'var(--dark-brown-border)' }}>
+          <span style={{ color: '#7BB3FF' }}>$</span>
           <input
             ref={inputRef}
             type="text"
@@ -183,7 +183,7 @@ export default function TerminalApp({ windowId }: AppComponentProps) {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             className="flex-1 bg-transparent outline-none"
-            style={{ color: 'var(--beige-text)' }}
+            style={{ color: 'var(--dark-brown-text)' }}
             placeholder="Enter command..."
             autoFocus
           />
@@ -192,15 +192,15 @@ export default function TerminalApp({ windowId }: AppComponentProps) {
 
       {/* Agent - 30% */}
       <div className="flex-[3] min-w-0 min-h-0 flex flex-col">
-        <div className="border-b border-[var(--beige-border)] p-3 flex items-center gap-2">
-          <TerminalSquare size={16} />
-          <span className="text-sm font-medium" style={{ color: 'var(--beige-text)' }}>
+        <div className="border-b p-3 flex items-center gap-2" style={{ borderColor: 'var(--dark-brown-border)' }}>
+          <TerminalSquare size={16} style={{ color: 'var(--dark-brown-text)' }} />
+          <span className="text-sm font-medium" style={{ color: 'var(--dark-brown-text)' }}>
             CLI Agent
           </span>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
           {agentMessages.length === 0 && (
-            <div className="text-sm opacity-60" style={{ color: 'var(--beige-text)' }}>
+            <div className="text-sm opacity-60" style={{ color: 'var(--dark-brown-text)' }}>
               Ask me about your terminal or filesystem. I can suggest commands.
             </div>
           )}
@@ -209,8 +209,8 @@ export default function TerminalApp({ windowId }: AppComponentProps) {
               <div
                 className={`inline-block p-2 rounded text-sm max-w-[85%] ${
                   msg.role === 'user'
-                    ? 'bg-blue-100 text-blue-900'
-                    : 'bg-gray-100 text-gray-900'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-100'
                 }`}
               >
                 <div className="whitespace-pre-wrap">{msg.content}</div>
@@ -218,7 +218,7 @@ export default function TerminalApp({ windowId }: AppComponentProps) {
                   <div className="mt-2 space-y-1">
                     {extractCommands(msg.content).map((cmd, cmdIdx) => (
                       <div key={cmdIdx} className="flex gap-1 items-center">
-                        <code className="flex-1 bg-gray-200 px-2 py-1 rounded text-xs font-mono">
+                        <code className="flex-1 bg-gray-800 px-2 py-1 rounded text-xs font-mono text-gray-200">
                           {cmd}
                         </code>
                         <button
@@ -244,13 +244,13 @@ export default function TerminalApp({ windowId }: AppComponentProps) {
             </div>
           ))}
           {isAgentLoading && (
-            <div className="text-sm opacity-60" style={{ color: 'var(--beige-text)' }}>
+            <div className="text-sm opacity-60" style={{ color: 'var(--dark-brown-text)' }}>
               Thinking...
             </div>
           )}
           <div ref={agentEndRef} />
         </div>
-        <div className="border-t border-[var(--beige-border)] p-2 flex gap-2">
+        <div className="border-t p-2 flex gap-2" style={{ borderColor: 'var(--dark-brown-border)' }}>
           <input
             type="text"
             value={agentInput}
@@ -261,8 +261,11 @@ export default function TerminalApp({ windowId }: AppComponentProps) {
                 handleAgentSubmit();
               }
             }}
-            className="flex-1 bg-transparent outline-none text-sm px-2 py-1 border border-[var(--beige-border)] rounded"
-            style={{ color: 'var(--beige-text)' }}
+            className="flex-1 bg-transparent outline-none text-sm px-2 py-1 rounded"
+            style={{ 
+              color: 'var(--dark-brown-text)',
+              border: '1px solid var(--dark-brown-border)'
+            }}
             placeholder="Ask agent..."
             disabled={isAgentLoading}
           />

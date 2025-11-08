@@ -224,17 +224,20 @@ export default function PromptBar() {
               rows={1}
               className={clsx(
                 'bg-transparent border-0 outline-none',
-                'text-gray-900 text-xl font-bold tracking-wide',
-                'placeholder:text-gray-900',
+                'text-xl font-bold tracking-wide',
+                'placeholder:text-gray-400',
                 'min-w-[400px] max-w-[600px]',
-                'caret-gray-900',
                 'resize-none overflow-y-auto',
                 'transition-all duration-200',
                 'leading-relaxed',
                 'prompt-bar-textarea',
                 isLoading && 'opacity-50 cursor-not-allowed animate-pulse'
               )}
-              style={{ maxHeight: '200px' }}
+              style={{ 
+                color: 'var(--dark-brown-text)',
+                caretColor: 'var(--dark-brown-text)',
+                maxHeight: '200px' 
+              }}
             />
             
             {error && (

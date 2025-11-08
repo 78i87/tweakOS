@@ -28,6 +28,6 @@ npm run lint     # eslint (Next.js config)
 
 1. Create a folder under `src/apps/<your-app>` exporting a component that matches `AppComponentProps`.
 2. Import that component and any icon into `src/apps/manifest.tsx`, append it to `defaultApps`, and the registry will pick it up automatically.
-3. Desktop widgets (`DesktopIcon`, `Dock`) already react to registered apps and window state, so the new app becomes available without extra wiring.
+3. Desktop widgets (desktop icons + dock) already react to registered apps and window state, so the new app becomes available without extra wiring.
 
 `appRegistry` also exposes `makeAppFromHTML` for dynamic, AI-generated HTML apps when you need to create a window at runtime.

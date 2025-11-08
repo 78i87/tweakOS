@@ -11,7 +11,7 @@ export default function NotepadApp({ windowId, initialData }: AppComponentProps)
   };
 
   return (
-    <div className="w-full h-full flex flex-col" style={{ background: 'var(--beige-surface)' }}>
+    <div className="w-full h-full flex flex-col" style={{ background: 'var(--dark-brown-surface)' }}>
       <textarea
         value={content}
         onChange={handleChange}
@@ -20,7 +20,7 @@ export default function NotepadApp({ windowId, initialData }: AppComponentProps)
         style={{ 
           minHeight: 0,
           background: 'transparent',
-          color: 'var(--beige-text)',
+          color: 'var(--dark-brown-text)',
           fontFamily: 'var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
           lineHeight: '1.8',
           border: 'none',

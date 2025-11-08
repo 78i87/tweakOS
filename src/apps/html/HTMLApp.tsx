@@ -314,7 +314,7 @@ export default function HTMLApp({ windowId, initialData }: AppComponentProps) {
   }, [scopedStyles, containerClass]);
 
   return (
-    <div className="w-full h-full overflow-auto p-4">
+    <div className="w-full h-full overflow-auto p-4" style={{ background: 'var(--dark-brown-surface)' }}>
       <div
         className={`w-full h-full ${containerClass}`}
         data-container-class={containerClass}
