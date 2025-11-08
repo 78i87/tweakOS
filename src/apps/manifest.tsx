@@ -4,7 +4,8 @@ import { registerApp } from '@/lib/appRegistry';
 import type { AppDefinition } from '@/lib/types';
 import NotepadApp from './notepad/NotepadApp';
 import TerminalApp from './terminal/TerminalApp';
-import { TerminalSquare } from 'lucide-react';
+import BrowserApp from './browser/BrowserApp';
+import { TerminalSquare, Globe } from 'lucide-react';
 
 const defaultApps: AppDefinition[] = [
   {
@@ -17,6 +18,12 @@ const defaultApps: AppDefinition[] = [
     title: 'Terminal',
     icon: <TerminalSquare size={28} />,
     component: TerminalApp,
+  },
+  {
+    appId: 'browser',
+    title: 'Browser',
+    icon: <Globe size={28} />,
+    component: BrowserApp,
   },
 ];
 

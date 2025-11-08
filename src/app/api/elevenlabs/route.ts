@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const ELEVEN_LABS_KEY = process.env.ELEVEN_LABS_KEY;
-if (!ELEVEN_LABS_KEY) {
-  throw new Error('ELEVEN_LABS_KEY environment variable is required');
-}
-
 export async function POST(req: NextRequest) {
   try {
+    const ELEVEN_LABS_KEY = process.env.ELEVEN_LABS_KEY;
+    if (!ELEVEN_LABS_KEY) {
+      return NextResponse.json(
+        { error: 'ELEVEN_LABS_KEY environment variable is required' },
+        { status: 500 }
+      );
+    }
+
     const { text, voiceId } = await req.json();
 
     if (!text || typeof text !== 'string') {

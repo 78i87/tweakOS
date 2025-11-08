@@ -15,4 +15,8 @@ export const pinnedApps: PinnedAppConfig[] = [
     appId: 'terminal',
     defaultPosition: { x: 160, y: 32 },
   },
+  {
+    appId: 'browser',
+    defaultPosition: { x: 288, y: 32 },
+  },
 ];
