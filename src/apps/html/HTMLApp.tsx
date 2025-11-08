@@ -48,6 +48,65 @@ function extractStyles(html: string): { styles: string[]; cleanedHtml: string } 
   }
 }
 
+/**
+ * Fixes common CSS syntax issues before parsing, particularly missing semicolons
+ */
+function fixCSSSyntax(css: string): string {
+  if (!css || typeof css !== 'string') {
+    return css;
+  }
+
+  let fixed = css;
+  
+  // Store comments temporarily to preserve them
+  const comments: string[] = [];
+  fixed = fixed.replace(/\/\*[\s\S]*?\*\//g, (match) => {
+    comments.push(match);
+    return `__COMMENT_${comments.length - 1}__`;
+  });
+  
+  // Fix missing semicolons before closing braces
+  // Pattern: property: value followed by whitespace/newlines and then }
+  // This matches declarations like "color: red }" and fixes to "color: red; }"
+  fixed = fixed.replace(/([a-zA-Z-][a-zA-Z0-9_-]*)\s*:\s*([^:;{}]+?)(\s*)(})/g, (match, prop, value, whitespace, brace) => {
+    // Don't add semicolon if it already ends with one
+    const trimmedValue = value.trim();
+    if (trimmedValue.endsWith(';')) {
+      return match;
+    }
+    // Don't add semicolon if value contains unmatched braces (like in calc(), url(), etc.)
+    const openBraces = (trimmedValue.match(/\(/g) || []).length;
+    const closeBraces = (trimmedValue.match(/\)/g) || []).length;
+    if (openBraces !== closeBraces) {
+      return match; // Likely a function call, don't modify
+    }
+    return `${prop}: ${trimmedValue};${whitespace}${brace}`;
+  });
+  
+  // Fix missing semicolons between property declarations
+  // Pattern: property: value followed by newline/whitespace and another property
+  fixed = fixed.replace(/([a-zA-Z-][a-zA-Z0-9_-]*)\s*:\s*([^:;{}]+?)(\s+)([a-zA-Z-][a-zA-Z0-9_-]*\s*:)/g, (match, prop1, value1, whitespace, prop2) => {
+    const trimmedValue = value1.trim();
+    if (trimmedValue.endsWith(';')) {
+      return match;
+    }
+    // Check for function calls
+    const openBraces = (trimmedValue.match(/\(/g) || []).length;
+    const closeBraces = (trimmedValue.match(/\)/g) || []).length;
+    if (openBraces !== closeBraces) {
+      return match;
+    }
+    return `${prop1}: ${trimmedValue};${whitespace}${prop2}`;
+  });
+
+  // Restore comments
+  comments.forEach((comment, index) => {
+    fixed = fixed.replace(`__COMMENT_${index}__`, comment);
+  });
+
+  return fixed;
+}
+
 function scopeSelector(selector: string, containerClass: string): string {
   const processor = selectorParser((selectors) => {
     selectors.each((sel) => {
@@ -129,7 +188,11 @@ function scopeStylesForContainer(styles: string[], containerClass: string): stri
     }
 
     try {
-      const root = postcss.parse(styleBlock);
+      // Fix common CSS syntax issues before parsing
+      const fixedCSS = fixCSSSyntax(styleBlock);
+      
+      // Try parsing with PostCSS
+      const root = postcss.parse(fixedCSS, { from: undefined });
 
       root.walkRules((rule) => {
         if (!rule.selector) {
@@ -161,8 +224,18 @@ function scopeStylesForContainer(styles: string[], containerClass: string): stri
 
       return root.toString();
     } catch (error) {
-      console.error('[HTMLApp] Failed to scope styles:', error);
-      return styleBlock;
+      console.error('[HTMLApp] Failed to scope styles. Error:', error);
+      console.error('[HTMLApp] Problematic CSS (first 500 chars):', styleBlock.substring(0, 500));
+      
+      // If parsing fails, try to return the fixed CSS without scoping as fallback
+      try {
+        const fixedCSS = fixCSSSyntax(styleBlock);
+        return fixedCSS;
+      } catch (fixError) {
+        console.error('[HTMLApp] Failed to fix CSS syntax:', fixError);
+        // Last resort: return original (might have issues but won't crash)
+        return styleBlock;
+      }
     }
   });
 }

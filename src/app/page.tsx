@@ -6,7 +6,6 @@ import Desktop from '@/components/desktop/Desktop';
 import DesktopIcon from '@/components/desktop/DesktopIcon';
 import Dock from '@/components/desktop/Dock';
 import PromptBar from '@/components/desktop/PromptBar';
-import TopBar from '@/components/desktop/TopBar';
 import { registerApp } from '@/lib/appRegistry';
 import NotepadApp from '@/apps/notepad/NotepadApp';
 import { FileText } from 'lucide-react';
@@ -25,8 +24,7 @@ export default function Home() {
 
   return (
     <div className="w-screen h-screen overflow-hidden relative">
-      <TopBar />
-      <div className="absolute inset-0" style={{ paddingTop: '48px', paddingBottom: '180px' }}>
+      <div className="absolute inset-0">
         <Desktop />
       </div>
       <DesktopIcon />
