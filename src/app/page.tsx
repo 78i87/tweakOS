@@ -4,6 +4,7 @@ import '@/apps/manifest';
 
 import Desktop from '@/components/desktop/Desktop';
 import DesktopIcon from '@/components/desktop/DesktopIcon';
+import TerminalIcon from '@/components/desktop/TerminalIcon';
 import Dock from '@/components/desktop/Dock';
 import PromptBar from '@/components/desktop/PromptBar';
 import { registerApp } from '@/lib/appRegistry';
@@ -28,6 +29,7 @@ export default function Home() {
         <Desktop />
       </div>
       <DesktopIcon />
+      <TerminalIcon />
       <PromptBar />
       <Dock />
     </div>
