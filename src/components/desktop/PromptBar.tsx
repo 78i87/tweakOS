@@ -9,7 +9,11 @@ import { useWindows, useWindowActions } from '@/lib/useWindowActions';
 import clsx from 'clsx';
 import './blob-indicator.css';
 
-export default function PromptBar() {
+type PromptBarProps = {
+  showBlob?: boolean;
+};
+
+export default function PromptBar({ showBlob = true }: PromptBarProps) {
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -243,42 +247,44 @@ export default function PromptBar() {
         </defs>
       </svg>
 
-      <Rnd
-        position={blobPosition}
-        onDragStart={handleDragStart}
-        onDragStop={handleDragStop}
-        enableResizing={false}
-        bounds="window"
-        style={{ position: 'absolute' }}
-      >
-        <div 
-          ref={containerRef}
-          className="cursor-move z-[90]"
-          onDoubleClick={handleDoubleClick}
+      {showBlob && (
+        <Rnd
+          position={blobPosition}
+          onDragStart={handleDragStart}
+          onDragStop={handleDragStop}
+          enableResizing={false}
+          bounds="window"
+          style={{ position: 'absolute' }}
         >
-          <div className={clsx(
-            'blob-indicator w-20 h-20',
-            isLoading && 'blob-thinking'
-          )}>
-            <div></div>
-            <div></div>
-            <div></div>
-            <div></div>
-            <div></div>
-            <div></div>
-            <div></div>
-            <div></div>
-            <div></div>
-            <div></div>
-            <div></div>
-            <div></div>
-            <div></div>
-            <div></div>
-            <div></div>
-            <div></div>
+          <div 
+            ref={containerRef}
+            className="cursor-move z-[90]"
+            onDoubleClick={handleDoubleClick}
+          >
+            <div className={clsx(
+              'blob-indicator w-20 h-20',
+              isLoading && 'blob-thinking'
+            )}>
+              <div></div>
+              <div></div>
+              <div></div>
+              <div></div>
+              <div></div>
+              <div></div>
+              <div></div>
+              <div></div>
+              <div></div>
+              <div></div>
+              <div></div>
+              <div></div>
+              <div></div>
+              <div></div>
+              <div></div>
+              <div></div>
+            </div>
           </div>
-        </div>
-      </Rnd>
+        </Rnd>
+      )}
 
       {isModalOpen && (
         <div

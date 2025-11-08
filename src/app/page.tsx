@@ -16,6 +16,7 @@ export default function Home() {
   const [showDesktopUI, setShowDesktopUI] = useState(false);
   const [introComplete, setIntroComplete] = useState(false);
   const [terminalWindowCentered, setTerminalWindowCentered] = useState(false);
+  const [overlayRevealing, setOverlayRevealing] = useState(false);
   const { openAppWindow } = useAppRegistry();
   const { updateWindowPosition, updateWindowSize } = useWindowActions();
   const windows = useWindows();
@@ -48,14 +49,21 @@ export default function Home() {
   }, [windows, showIntro, introComplete, terminalWindowCentered, updateWindowPosition, updateWindowSize]);
 
   const handleTerminalIconClick = () => {
-    // Open terminal with callback
+    // Open terminal with callbacks
     openAppWindow('terminal', {
       fromIntro: true,
+      onStartReveal: () => {
+        // Trigger the gradient reveal animation
+        setOverlayRevealing(true);
+        // Remove overlay after animation completes
+        setTimeout(() => {
+          setShowIntro(false);
+        }, 1400); // Match animation duration
+      },
       onStartupComplete: () => {
         // Wait 4 seconds after script completion
         setTimeout(() => {
           setIntroComplete(true);
-          setShowIntro(false);
           setShowDesktopUI(true);
           localStorage.setItem('introSeen', 'true');
         }, 4000);
@@ -77,8 +85,7 @@ export default function Home() {
       )}
       {showIntro && (
         <div
-          className="absolute inset-0 flex items-center justify-center"
-          style={{ background: 'var(--dark-brown-surface)', zIndex: 0 }}
+          className={`intro-overlay flex items-center justify-center ${overlayRevealing ? 'revealing' : ''}`}
         >
           <button
             onClick={handleTerminalIconClick}

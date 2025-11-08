@@ -231,3 +231,49 @@ textarea::placeholder {
   color: rgba(47, 42, 34, 0.6) !important;
   opacity: 1 !important;
 }
+
+/* Radial reveal animation for intro overlay - gradient reveal effect */
+@keyframes radial-reveal {
+  0% {
+    clip-path: circle(0% at 50% 50%);
+    opacity: 1;
+  }
+  100% {
+    clip-path: circle(150% at 50% 50%);
+    opacity: 0;
+  }
+}
+
+.intro-overlay {
+  background: var(--dark-brown-surface);
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.intro-overlay button {
+  pointer-events: auto;
+}
+
+.intro-overlay.revealing {
+  animation: radial-reveal 1.4s ease-out forwards;
+}
+
+/* Slow pulse animation for intro icon */
+@keyframes pulse-slow {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.pulse-slow {
+  animation: pulse-slow 2s ease-in-out infinite;
+}
+
+.pause-on-hover:hover .pulse-slow {
+  animation-play-state: paused;
+}

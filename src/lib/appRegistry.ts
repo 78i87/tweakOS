@@ -54,6 +54,14 @@ export function openAppWindow(appId: string, data?: any): void {
   }
 
   openWindow(appId, app.title, data);
+  // Focus the newly opened window to bring it to front (important for intro overlay)
+  setTimeout(() => {
+    const newWindows = useWindowStore.getState().windows;
+    const newWindow = newWindows.find((w) => w.appId === appId);
+    if (newWindow) {
+      focusWindow(newWindow.id);
+    }
+  }, 0);
 }
 
 export function makeAppFromHTML(args: { title: string; html: string }): void {
