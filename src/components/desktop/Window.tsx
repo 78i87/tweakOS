@@ -64,6 +64,26 @@ export default function Window({ window: windowState }: WindowProps) {
     closeWindow(windowState.id);
   };
 
+  const handleKeyDownCapture = (e: React.KeyboardEvent) => {
+    const isArrowKey =
+      e.key === 'ArrowUp' ||
+      e.key === 'ArrowDown' ||
+      e.key === 'ArrowLeft' ||
+      e.key === 'ArrowRight';
+    if (!isArrowKey) return;
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+    const tag = target.tagName.toLowerCase();
+    const isFormField =
+      tag === 'input' ||
+      tag === 'textarea' ||
+      tag === 'select' ||
+      target.isContentEditable === true;
+    if (isFormField) return;
+    e.preventDefault();
+  };
+
   const handleDragStop = (_e: unknown, d: { x: number; y: number }) => {
     if (!isMaximized) {
       updateWindowPosition(windowState.id, { x: d.x, y: d.y });
@@ -174,6 +194,7 @@ export default function Window({ window: windowState }: WindowProps) {
           borderBottomLeftRadius: isMaximized ? '0' : '16px',
           borderBottomRightRadius: isMaximized ? '0' : '16px',
         }}
+        onKeyDownCapture={handleKeyDownCapture}
       >
         <AppComponent windowId={windowState.id} initialData={windowState.data} />
       </div>

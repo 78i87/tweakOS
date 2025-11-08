@@ -25,6 +25,7 @@ export default function PromptBar({ showBlob = true }: PromptBarProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const didDragRef = useRef(false);
   const dragStartPositionRef = useRef({ x: 0, y: 0 });
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   
   const windows = useWindows();
   const { updateWindowData } = useWindowActions();
@@ -158,6 +159,18 @@ export default function PromptBar({ showBlob = true }: PromptBarProps) {
           title: data.title,
           html: data.html,
         });
+      }
+      
+      // Play success sound
+      try {
+        if (!audioRef.current) {
+          audioRef.current = new Audio('/AI_finish.mp3');
+        }
+        audioRef.current.play().catch(() => {
+          // Silently handle audio playback errors (e.g., user interaction required)
+        });
+      } catch (err) {
+        // Silently handle audio creation/playback errors
       }
       
       setPrompt('');
