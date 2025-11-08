@@ -16,14 +16,17 @@ export default function NotepadApp({ windowId, initialData }: AppComponentProps)
         value={content}
         onChange={handleChange}
         placeholder="Start typing..."
-        className="flex-1 w-full p-4 resize-none outline-none text-sm"
+        className="flex-1 w-full resize-none outline-none"
         style={{ 
           minHeight: 0,
           background: 'transparent',
           color: 'var(--beige-text)',
           fontFamily: 'var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-          lineHeight: '1.6',
+          lineHeight: '1.8',
           border: 'none',
+          padding: '2px 2px',
+          fontSize: '14px',
+          letterSpacing: '0.01em',
         }}
       />
     </div>

@@ -144,37 +144,37 @@ export default function Window({ window: windowState }: WindowProps) {
         }}
         onDoubleClick={handleMaximize}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" style={{ paddingLeft: '12px' }}>
           {app.icon && <span className="w-4 h-4">{app.icon}</span>}
           <span className="text-sm font-medium">{windowState.title}</span>
         </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={handleMinimize}
-            className="neu-button w-6 h-6 flex items-center justify-center p-0"
-            aria-label="Minimize"
-          >
-            <Minus size={14} />
-          </button>
+        <div className="flex items-center gap-1.5" style={{ marginRight: '12px' }}>
           <button
             onClick={handleMaximize}
-            className="neu-button w-6 h-6 flex items-center justify-center p-0"
+            className="macos-window-control macos-control-maximize"
             aria-label={isMaximized ? 'Restore' : 'Maximize'}
           >
-            {isMaximized ? <Square size={12} /> : <Maximize2 size={12} />}
+            {isMaximized ? <Square size={6} /> : <Maximize2 size={6} />}
+          </button>
+          <button
+            onClick={handleMinimize}
+            className="macos-window-control macos-control-minimize"
+            aria-label="Minimize"
+          >
+            <Minus size={8} />
           </button>
           <button
             onClick={handleClose}
-            className="neu-button w-6 h-6 flex items-center justify-center p-0"
+            className="macos-window-control macos-control-close"
             aria-label="Close"
           >
-            <X size={14} />
+            <X size={8} />
           </button>
         </div>
       </div>
 
       {/* Window Content */}
-      <div className="flex-1 overflow-hidden neu-surface-inset" style={{ margin: '8px', borderRadius: '12px' }}>
+      <div className="flex-1 overflow-hidden" style={{ margin: '8px', borderRadius: '12px', background: 'var(--beige-surface)' }}>
         <AppComponent windowId={windowState.id} initialData={windowState.data} />
       </div>
     </Rnd>

@@ -87,6 +87,54 @@ body {
   transform: none;
 }
 
+/* macOS Window Control Buttons */
+.macos-window-control {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.macos-window-control svg {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.macos-window-control:hover svg {
+  opacity: 1;
+}
+
+.macos-control-close {
+  background-color: #FF5F57;
+}
+
+.macos-control-close:hover {
+  background-color: #E0443E;
+}
+
+.macos-control-minimize {
+  background-color: #FFBD2E;
+}
+
+.macos-control-minimize:hover {
+  background-color: #E6A826;
+}
+
+.macos-control-maximize {
+  background-color: #28CA42;
+}
+
+.macos-control-maximize:hover {
+  background-color: #1FB536;
+}
+
 /* Window resize handles */
 .window-resize-handle {
   position: absolute;
@@ -155,4 +203,10 @@ body {
   width: 12px;
   height: 12px;
   cursor: nw-resize;
+}
+
+/* Notepad placeholder styling */
+textarea::placeholder {
+  color: var(--beige-accent);
+  opacity: 0.6;
 }
