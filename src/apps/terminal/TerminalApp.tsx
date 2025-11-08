@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { AppComponentProps } from '@/lib/types';
-import { executeCommand } from './terminalCore';
+import { executeCommand, parseCommand, KNOWN_COMMANDS } from './terminalCore';
 import { initVfs } from './vfs';
+import { useWindowActions } from '@/lib/useWindowActions';
 
 // Helper function to speak GAI lines using ElevenLabs TTS
 // We support inline emotion tags (e.g., [whispers], [excited], [sarcastic]) in the input text.
@@ -99,6 +100,17 @@ function computeVoiceSettingsFromTags(tags: string[]): VoiceSettings {
   return out;
 }
 
+// Module-level audio reference for cancellation
+let currentAudio: HTMLAudioElement | null = null;
+
+function cancelSpeech() {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    currentAudio = null;
+  }
+}
+
 async function speakGAI(text: string): Promise<void> {
   try {
     // Extract and remove inline tags before sending to ElevenLabs
@@ -124,25 +136,30 @@ async function speakGAI(text: string): Promise<void> {
     const audioBlob = await response.blob();
     const audioUrl = URL.createObjectURL(audioBlob);
     const audio = new Audio(audioUrl);
+    currentAudio = audio;
 
     await new Promise<void>((resolve, reject) => {
       audio.onended = () => {
         URL.revokeObjectURL(audioUrl);
+        currentAudio = null;
         resolve();
       };
       audio.onerror = (error) => {
         URL.revokeObjectURL(audioUrl);
+        currentAudio = null;
         console.warn('[GAI TTS] Audio playback error:', error);
         resolve(); // Continue even if audio fails
       };
       audio.play().catch((error) => {
         console.warn('[GAI TTS] Audio play failed (may be blocked):', error);
         URL.revokeObjectURL(audioUrl);
+        currentAudio = null;
         resolve(); // Continue even if autoplay is blocked
       });
     });
   } catch (error) {
     console.warn('[GAI TTS] Error:', error);
+    currentAudio = null;
     // Continue without audio if there's an error
   }
 }
@@ -203,11 +220,14 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
   const [startupComplete, setStartupComplete] = useState(false);
   const [awaitingGUIExplain, setAwaitingGUIExplain] = useState(false);
   const [showInlineInput, setShowInlineInput] = useState(false);
+  const [isProcessingAI, setIsProcessingAI] = useState(false);
   
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const startupRanRef = useRef(false);
   const startupCompleteCallbackRanRef = useRef(false);
+  const introSkippedRef = useRef(false);
+  const { closeWindow } = useWindowActions();
 
   useEffect(() => {
     // Guard against double execution in Strict Mode
@@ -217,7 +237,26 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
     // Initialize VFS
     initVfs();
     
-    // Startup sequence
+    // Check if intro has been seen - if so, skip boot sequence
+    const introSeen = localStorage.getItem('introSeen') === 'true';
+    if (introSeen) {
+      // Show greeting and enable input
+      setHistory([
+        {
+          command: '',
+          output: ['Nice to see you again.'],
+          timestamp: Date.now(),
+          isAIText: true,
+        },
+      ]);
+      setShowInlineInput(true);
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+      return;
+    }
+    
+    // Startup sequence (only if intro not seen)
     const startupMessages = [
       'Booting...',
       'Neural link... FAILED.',
@@ -380,7 +419,33 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
     terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [history]);
 
-  const handleCommand = (cmd: string, isAI: boolean = false) => {
+  // Handle F key to skip intro when terminal is launched from intro
+  useEffect(() => {
+    if (!initialData?.fromIntro || introSkippedRef.current) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.key === 'F' || e.key === 'f') && !introSkippedRef.current) {
+        e.preventDefault();
+        introSkippedRef.current = true;
+        
+        // Cancel any ongoing TTS
+        cancelSpeech();
+        
+        // Call skip callback if provided
+        if (initialData?.onSkipIntro) {
+          initialData.onSkipIntro();
+        }
+        
+        // Close this terminal window
+        closeWindow(windowId);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [initialData, windowId, closeWindow]);
+
+  const handleCommand = async (cmd: string, isAI: boolean = false) => {
     if (!cmd.trim()) return;
 
     // Intercept first user input to show GUI prompt
@@ -560,51 +625,119 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
       return;
     }
 
-    const result = executeCommand(cmd, cwd);
-    
-    if (result.clear) {
-      setHistory([]);
-    } else {
-      setHistory((prev) => {
-        // If this is an AI command and the last entry is the same command with typing, update it
-        if (isAI && prev.length > 0) {
-          const lastEntry = prev[prev.length - 1];
-          if (lastEntry.command === cmd && lastEntry.isAI && lastEntry.typingText) {
-            // Update existing entry with output
-            const updated = [...prev];
-            updated[updated.length - 1] = {
-              ...lastEntry,
-              output: result.output,
-              typingText: undefined, // Clear typing flag
-            };
-            return updated;
+    // Check if input is a known command
+    const { command } = parseCommand(cmd);
+    const isKnownCommand = KNOWN_COMMANDS.has(command.toLowerCase());
+
+    if (isKnownCommand) {
+      // Execute as terminal command
+      const result = executeCommand(cmd, cwd);
+      
+      if (result.clear) {
+        setHistory([]);
+      } else {
+        setHistory((prev) => {
+          // If this is an AI command and the last entry is the same command with typing, update it
+          if (isAI && prev.length > 0) {
+            const lastEntry = prev[prev.length - 1];
+            if (lastEntry.command === cmd && lastEntry.isAI && lastEntry.typingText) {
+              // Update existing entry with output
+              const updated = [...prev];
+              updated[updated.length - 1] = {
+                ...lastEntry,
+                output: result.output,
+                typingText: undefined, // Clear typing flag
+              };
+              return updated;
+            }
           }
+          // Otherwise add new entry
+          return [
+            ...prev,
+            {
+              command: cmd,
+              output: result.output,
+              timestamp: Date.now(),
+              isAI,
+            },
+          ];
+        });
+      }
+
+      setCwd(result.cwd);
+      if (!isAI) {
+        setInput('');
+        // Keep inline input visible after command execution
+        if (!showInlineInput) {
+          setShowInlineInput(true);
         }
-        // Otherwise add new entry
-        return [
+      }
+    } else {
+      // Not a known command - send to Chronos AI
+      if (!isAI) {
+        // Add user input to history
+        setHistory((prev) => [
           ...prev,
           {
             command: cmd,
-            output: result.output,
+            output: [],
             timestamp: Date.now(),
-            isAI,
+            isAI: false,
           },
-        ];
-      });
-    }
+        ]);
+        setInput('');
+        setIsProcessingAI(true);
 
-    setCwd(result.cwd);
-    if (!isAI) {
-      setInput('');
-      // Keep inline input visible after command execution
-      if (!showInlineInput) {
-        setShowInlineInput(true);
+        try {
+          const response = await fetch('/api/chronos', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ prompt: cmd }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`API error: ${response.status}`);
+          }
+
+          const data = await response.json();
+          const aiText = data.text || 'Sorry, I could not generate a response.';
+
+          // Add AI response with typing effect
+          setHistory((prev) => [
+            ...prev,
+            {
+              command: '',
+              output: [aiText],
+              timestamp: Date.now(),
+              isAIText: true,
+              typingText: aiText,
+            },
+          ]);
+        } catch (error) {
+          console.error('[Terminal] Chronos API error:', error);
+          setHistory((prev) => [
+            ...prev,
+            {
+              command: '',
+              output: ['Sorry, I encountered an error. Please try again.'],
+              timestamp: Date.now(),
+              isAIText: true,
+            },
+          ]);
+        } finally {
+          setIsProcessingAI(false);
+          if (!showInlineInput) {
+            setShowInlineInput(true);
+          }
+        }
       }
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !isProcessingAI) {
       e.preventDefault();
       if (awaitingGUIExplain || showInlineInput) {
         handleCommand(input, false);
