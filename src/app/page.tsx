@@ -1,12 +1,16 @@
 'use client';
 
-import { useEffect } from 'react';
+import '@/apps/manifest';
+
 import Desktop from '@/components/desktop/Desktop';
-import TopBar from '@/components/desktop/TopBar';
+import DesktopIcon from '@/components/desktop/DesktopIcon';
 import Dock from '@/components/desktop/Dock';
+import PromptBar from '@/components/desktop/PromptBar';
+import TopBar from '@/components/desktop/TopBar';
 import { registerApp } from '@/lib/appRegistry';
 import NotepadApp from '@/apps/notepad/NotepadApp';
 import { FileText } from 'lucide-react';
+import { useEffect } from 'react';
 
 export default function Home() {
   useEffect(() => {
@@ -22,9 +26,11 @@ export default function Home() {
   return (
     <div className="w-screen h-screen overflow-hidden relative">
       <TopBar />
-      <div className="absolute inset-0" style={{ paddingTop: '48px', paddingBottom: '80px' }}>
+      <div className="absolute inset-0" style={{ paddingTop: '48px', paddingBottom: '180px' }}>
         <Desktop />
       </div>
+      <DesktopIcon />
+      <PromptBar />
       <Dock />
     </div>
   );

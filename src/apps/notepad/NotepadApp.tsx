@@ -11,13 +11,23 @@ export default function NotepadApp({ windowId, initialData }: AppComponentProps)
   };
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="w-full h-full flex flex-col" style={{ background: 'var(--beige-surface)' }}>
       <textarea
         value={content}
         onChange={handleChange}
         placeholder="Start typing..."
-        className="flex-1 w-full p-4 resize-none outline-none bg-transparent text-sm font-mono"
-        style={{ minHeight: 0 }}
+        className="flex-1 w-full resize-none outline-none"
+        style={{ 
+          minHeight: 0,
+          background: 'transparent',
+          color: 'var(--beige-text)',
+          fontFamily: 'var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          lineHeight: '1.8',
+          border: 'none',
+          padding: '2px 2px',
+          fontSize: '14px',
+          letterSpacing: '0.01em',
+        }}
       />
     </div>
   );
