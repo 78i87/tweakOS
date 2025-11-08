@@ -1,5 +1,7 @@
+import React from 'react';
 import { AppDefinition } from './types';
 import { useWindowStore } from './windowStore';
+import BlobIcon from '@/components/icons/BlobIcon';
 
 // Registry to store all available apps
 const appRegistry = new Map<string, AppDefinition>();
@@ -54,6 +56,7 @@ export function makeAppFromHTML(args: { title: string; html: string }): void {
     registerApp({
       appId,
       title: args.title,
+      icon: React.createElement(BlobIcon, { size: 20 }),
       component: HTMLApp,
     });
     
