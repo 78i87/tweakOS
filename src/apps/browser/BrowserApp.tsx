@@ -175,6 +175,7 @@ export default function BrowserApp({ windowId, initialData }: AppComponentProps)
       height: 100%;
       overflow: auto;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-size: 18px;
     }
   </style>
 </head>
@@ -300,7 +301,7 @@ export default function BrowserApp({ windowId, initialData }: AppComponentProps)
               background: 'var(--dark-brown-accent)',
               border: '1px solid var(--dark-brown-border)',
               color: 'var(--dark-brown-text)',
-              fontSize: '13px',
+              fontSize: '16px',
             }}
             onFocus={(e) => {
               if (!isAiView) {
@@ -349,7 +350,7 @@ export default function BrowserApp({ windowId, initialData }: AppComponentProps)
                     Unable to Load Page
                   </h3>
                   <p
-                    className="text-sm mb-4"
+                    className="text-base mb-4"
                     style={{ color: 'var(--dark-brown-text)' }}
                   >
                     {error}
@@ -357,7 +358,7 @@ export default function BrowserApp({ windowId, initialData }: AppComponentProps)
                   <div className="flex gap-2">
                     <button
                       onClick={reload}
-                      className="px-4 py-2 rounded text-sm transition-colors"
+                      className="px-4 py-2 rounded text-base transition-colors"
                       style={{
                         background: 'var(--beige-accent)',
                         color: 'var(--dark-brown-text)',
@@ -376,7 +377,7 @@ export default function BrowserApp({ windowId, initialData }: AppComponentProps)
                         setError(null);
                         window.open(currentUrl, '_blank');
                       }}
-                      className="px-4 py-2 rounded text-sm transition-colors"
+                      className="px-4 py-2 rounded text-base transition-colors"
                       style={{
                         border: '1px solid var(--dark-brown-border)',
                         color: 'var(--dark-brown-text)',

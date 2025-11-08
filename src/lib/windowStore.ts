@@ -16,7 +16,7 @@ interface WindowStore {
   updateWindowData: (id: string, data: any) => void;
 }
 
-const defaultWindowSize = { width: 600, height: 400 };
+const defaultWindowSize = { width: 900, height: 600 };
 const defaultPosition = { x: 100, y: 100 };
 
 export const useWindowStore = create<WindowStore>((set) => ({

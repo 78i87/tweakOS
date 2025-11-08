@@ -36,6 +36,19 @@ export function subscribeToApps(callback: () => void): () => void {
   return () => listeners.delete(callback);
 }
 
+function playAppOpenSound(): void {
+  try {
+    const audio = new Audio('/app_open.mp3');
+    audio.play().catch((error) => {
+      // Silently handle autoplay restrictions or other errors
+      console.debug('Could not play app open sound:', error);
+    });
+  } catch (error) {
+    // Silently handle errors (e.g., audio not supported)
+    console.debug('Could not create audio for app open sound:', error);
+  }
+}
+
 export function openAppWindow(appId: string, data?: any): void {
   const app = getApp(appId);
   if (!app) {
@@ -54,6 +67,7 @@ export function openAppWindow(appId: string, data?: any): void {
   }
 
   openWindow(appId, app.title, data);
+  playAppOpenSound();
   // Focus the newly opened window to bring it to front (important for intro overlay)
   setTimeout(() => {
     const newWindows = useWindowStore.getState().windows;

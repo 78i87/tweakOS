@@ -58,6 +58,7 @@ body {
   background: var(--neu-bg);
   color: var(--neu-text);
   font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 18px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
