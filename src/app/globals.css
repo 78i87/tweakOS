@@ -210,3 +210,14 @@ textarea::placeholder {
   color: var(--beige-accent);
   opacity: 0.6;
 }
+
+/* Bold caret for prompt bar */
+.prompt-bar-textarea {
+  caret-width: 3px;
+}
+
+/* Override placeholder color for prompt bar */
+.prompt-bar-textarea::placeholder {
+  color: #8B6F47 !important; /* medium brown */
+  opacity: 1 !important;
+}

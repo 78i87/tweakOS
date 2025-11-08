@@ -167,7 +167,7 @@ export default function Window({ window: windowState }: WindowProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden" style={{ margin: '8px', borderRadius: '12px', background: 'var(--beige-surface)' }}>
+      <div className="flex-1 overflow-hidden">
         <AppComponent windowId={windowState.id} initialData={windowState.data} />
       </div>
     </Rnd>
