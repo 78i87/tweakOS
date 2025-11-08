@@ -5,6 +5,7 @@ import { Rnd } from 'react-rnd';
 import { makeAppFromHTML } from '@/lib/appRegistry';
 import { getPromptPlaceholder } from '@/lib/promptText';
 import { useAnimatedText } from '@/hooks/useAnimatedText';
+import { useWindows, useWindowActions } from '@/lib/useWindowActions';
 import clsx from 'clsx';
 import './blob-indicator.css';
 
@@ -20,6 +21,14 @@ export default function PromptBar() {
   const modalRef = useRef<HTMLDivElement>(null);
   const didDragRef = useRef(false);
   const dragStartPositionRef = useRef({ x: 0, y: 0 });
+  
+  const windows = useWindows();
+  const { updateWindowData } = useWindowActions();
+  
+  // Find the browser window with highest zIndex (most focused)
+  const browserWindow = windows
+    .filter(w => w.appId === 'browser' && w.status !== 'minimized')
+    .sort((a, b) => b.zIndex - a.zIndex)[0];
   
   const placeholderText = getPromptPlaceholder();
   const animatedPlaceholderText = useAnimatedText(
@@ -111,12 +120,15 @@ export default function PromptBar() {
     setIsModalOpen(true);
 
     try {
+      // Get siteUrl from browser window if it exists
+      const siteUrl = browserWindow?.data?.url || null;
+      
       const response = await fetch('/api/GUIAgent', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, siteUrl }),
       });
 
       if (!response.ok) {
@@ -130,10 +142,19 @@ export default function PromptBar() {
         throw new Error('Invalid response format from API');
       }
 
-      makeAppFromHTML({
-        title: data.title,
-        html: data.html,
-      });
+      // If browser window exists and we have a siteUrl, inject HTML into browser
+      if (browserWindow && siteUrl) {
+        updateWindowData(browserWindow.id, { 
+          aiHtml: data.html,
+          aiTheme: prompt 
+        });
+      } else {
+        // Fallback to creating a new HTML app window
+        makeAppFromHTML({
+          title: data.title,
+          html: data.html,
+        });
+      }
       
       setPrompt('');
       setShowOverlay(true);

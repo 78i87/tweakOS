@@ -13,6 +13,7 @@ interface WindowStore {
   updateWindowPosition: (id: string, position: { x: number; y: number }) => void;
   updateWindowSize: (id: string, size: { width: number; height: number }) => void;
   updateWindowStatus: (id: string, status: WindowStatus) => void;
+  updateWindowData: (id: string, data: any) => void;
 }
 
 const defaultWindowSize = { width: 600, height: 400 };
@@ -106,6 +107,14 @@ export const useWindowStore = create<WindowStore>((set) => ({
     set((state) => ({
       windows: state.windows.map((w) =>
         w.id === id ? { ...w, status } : w
+      ),
+    }));
+  },
+
+  updateWindowData: (id: string, data: any) => {
+    set((state) => ({
+      windows: state.windows.map((w) =>
+        w.id === id ? { ...w, data: { ...w.data, ...data } } : w
       ),
     }));
   },

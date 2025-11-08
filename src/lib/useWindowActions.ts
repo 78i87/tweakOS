@@ -13,6 +13,7 @@ export function useWindowActions() {
     (state) => state.updateWindowPosition
   );
   const updateWindowSize = useWindowStore((state) => state.updateWindowSize);
+  const updateWindowData = useWindowStore((state) => state.updateWindowData);
 
   return {
     openWindow,
@@ -23,6 +24,7 @@ export function useWindowActions() {
     focusWindow,
     updateWindowPosition,
     updateWindowSize,
+    updateWindowData,
   };
 }
 

@@ -42,13 +42,136 @@ const responseSchema = {
   required: ['title', 'html'],
 };
 
+/**
+ * Fetches site HTML and extracts compact context
+ */
+async function fetchSiteContext(siteUrl: string): Promise<{
+  title: string;
+  description: string;
+  headings: string[];
+  htmlSnippet: string;
+} | null> {
+  try {
+    console.log('[GUIAgent API] Fetching site context from:', siteUrl);
+    
+    const response = await fetch(siteUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(10000), // 10 second timeout
+    });
+
+    if (!response.ok) {
+      console.warn('[GUIAgent API] Failed to fetch site:', response.status, response.statusText);
+      return null;
+    }
+
+    const html = await response.text();
+    
+    // Extract title
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    const title = titleMatch ? titleMatch[1].trim() : '';
+
+    // Extract meta description
+    const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
+    const description = descMatch ? descMatch[1].trim() : '';
+
+    // Extract headings (first few h1, h2)
+    const h1Matches = html.match(/<h1[^>]*>([^<]+)<\/h1>/gi) || [];
+    const h2Matches = html.match(/<h2[^>]*>([^<]+)<\/h2>/gi) || [];
+    const headings = [
+      ...h1Matches.slice(0, 3).map(h => h.replace(/<[^>]+>/g, '').trim()),
+      ...h2Matches.slice(0, 5).map(h => h.replace(/<[^>]+>/g, '').trim()),
+    ].filter(Boolean);
+
+    // Extract body content, remove scripts and styles, limit size
+    const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    let htmlSnippet = bodyMatch ? bodyMatch[1] : '';
+    
+    // Remove scripts
+    htmlSnippet = htmlSnippet.replace(/<script[\s\S]*?<\/script>/gi, '');
+    // Remove styles
+    htmlSnippet = htmlSnippet.replace(/<style[\s\S]*?<\/style>/gi, '');
+    // Remove comments
+    htmlSnippet = htmlSnippet.replace(/<!--[\s\S]*?-->/g, '');
+    // Clean up whitespace
+    htmlSnippet = htmlSnippet.replace(/\s+/g, ' ').trim();
+    
+    // Limit to ~12k characters to avoid token bloat
+    if (htmlSnippet.length > 12000) {
+      htmlSnippet = htmlSnippet.substring(0, 12000) + '...';
+    }
+
+    console.log('[GUIAgent API] Extracted site context:', {
+      title,
+      description: description.substring(0, 100),
+      headingsCount: headings.length,
+      snippetLength: htmlSnippet.length,
+    });
+
+    return { title, description, headings, htmlSnippet };
+  } catch (error) {
+    console.warn('[GUIAgent API] Error fetching site context:', error instanceof Error ? error.message : error);
+    return null;
+  }
+}
+
+/**
+ * Creates browser-edit system prompt with site context
+ */
+function createBrowserEditPrompt(prompt: string, siteContext: {
+  title: string;
+  description: string;
+  headings: string[];
+  htmlSnippet: string;
+}): string {
+  const { title, description, headings, htmlSnippet } = siteContext;
+  
+  return `You are an expert web developer specializing in reimagining websites in different visual styles and themes.
+
+SITE CONTEXT:
+- Title: ${title || 'Unknown'}
+- Description: ${description || 'No description available'}
+- Key Headings: ${headings.length > 0 ? headings.join(', ') : 'None found'}
+- HTML Structure Sample: ${htmlSnippet.substring(0, 2000)}...
+
+USER REQUEST: "${prompt}"
+
+YOUR TASK:
+Reimagine the website described above in the style/theme requested by the user. You should:
+
+1. PRESERVE THE STRUCTURE: Maintain the same information architecture, navigation patterns, and content organization as the original site
+2. APPLY THE REQUESTED STYLE: Transform the visual design to match the user's requested theme (e.g., "cyberpunk", "minimalist", "retro", etc.)
+3. PRESERVE CONTENT: Keep textual content recognizable and maintain the same meaning, but feel free to adapt wording slightly if needed for the new style
+4. AVOID TRADEMARKS: Do NOT copy or display official logos, brand names, or trademarked imagery. Create generic alternatives that convey the same concept
+5. MODERN VISUALS: Use contemporary web design techniques, animations, and interactions that align with the requested style
+6. SELF-CONTAINED: Generate complete, self-contained HTML with inline CSS and JavaScript
+
+TECHNICAL REQUIREMENTS:
+- Wrap the entire application in a single root element with the class "app-root"
+- Scope every CSS selector to that root container (e.g., ".app-root .card")
+- Avoid global selectors such as body, html, or :root
+- Use unique, namespaced class names (e.g., "app-root__button", "app-root--primary")
+- Include all necessary JavaScript for interactivity
+- Place <style> tags at the beginning of your HTML content
+- Ensure the HTML is valid and renderable directly
+
+Return your response as a JSON object with "title", "html", and "description" fields.`;
+}
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   console.log('[GUIAgent API] ===== Starting request =====');
   
   try {
-    const { prompt } = await request.json();
+    const { prompt, siteUrl } = await request.json();
     console.log('[GUIAgent API] Received prompt:', prompt);
+    if (siteUrl) {
+      console.log('[GUIAgent API] Received siteUrl:', siteUrl);
+    }
 
     if (!prompt || typeof prompt !== 'string') {
       console.error('[GUIAgent API] Invalid prompt:', prompt);
@@ -58,7 +181,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const systemPrompt = `You are an expert web developer. Generate a complete, functional HTML application based on the user's request.
+    // Fetch site context if siteUrl is provided
+    let siteContext = null;
+    let useBrowserEditPrompt = false;
+    
+    if (siteUrl && typeof siteUrl === 'string') {
+      siteContext = await fetchSiteContext(siteUrl);
+      if (siteContext) {
+        useBrowserEditPrompt = true;
+        console.log('[GUIAgent API] Using browser-edit prompt with site context');
+      } else {
+        console.log('[GUIAgent API] Failed to fetch site context, falling back to normal prompt');
+      }
+    }
+
+    const systemPrompt = useBrowserEditPrompt && siteContext
+      ? createBrowserEditPrompt(prompt, siteContext)
+      : `You are an expert web developer. Generate a complete, functional HTML application based on the user's request.
 
 User Request: "${prompt}"
 
