@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+:root {
+  /* Neumorphism Theme Colors */
+  --neu-bg: #e0e5ec;
+  --neu-surface: #e0e5ec;
+  --neu-text: #2d3436;
+  --neu-shadow-light: #ffffff;
+  --neu-shadow-dark: #a3b1c6;
+  
+  /* Shadows for Neumorphism */
+  --neu-shadow-sm: 3px 3px 6px var(--neu-shadow-dark), -3px -3px 6px var(--neu-shadow-light);
+  --neu-shadow-md: 6px 6px 12px var(--neu-shadow-dark), -6px -6px 12px var(--neu-shadow-light);
+  --neu-shadow-lg: 9px 9px 18px var(--neu-shadow-dark), -9px -9px 18px var(--neu-shadow-light);
+  --neu-shadow-inset: inset 3px 3px 6px var(--neu-shadow-dark), inset -3px -3px 6px var(--neu-shadow-light);
+  
+  /* Radius */
+  --neu-radius: 16px;
+  --neu-radius-sm: 12px;
+  --neu-radius-lg: 20px;
+  
+  /* Background */
+  --background: var(--neu-bg);
+  --foreground: var(--neu-text);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--neu-bg);
+  color: var(--neu-text);
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Neumorphism utility classes */
+.neu-surface {
+  background: var(--neu-surface);
+  box-shadow: var(--neu-shadow-md);
+  border-radius: var(--neu-radius);
+}
+
+.neu-surface-inset {
+  background: var(--neu-surface);
+  box-shadow: var(--neu-shadow-inset);
+  border-radius: var(--neu-radius);
+}
+
+.neu-button {
+  background: var(--neu-surface);
+  box-shadow: var(--neu-shadow-sm);
+  border-radius: var(--neu-radius-sm);
+  transition: all 0.2s ease;
+}
+
+.neu-button:hover {
+  box-shadow: var(--neu-shadow-inset);
+}
+
+.neu-button:active {
+  box-shadow: var(--neu-shadow-inset);
+  transform: scale(0.98);
+}
