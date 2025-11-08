@@ -1,10 +1,49 @@
 'use client';
 
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo, useEffect, useRef, memo } from 'react';
 import DOMPurify from 'dompurify';
 import postcss from 'postcss';
 import selectorParser from 'postcss-selector-parser';
 import { AppComponentProps } from '@/lib/types';
+
+/**
+ * Creates a scoped document object that queries within a container first,
+ * then falls back to the real document. This avoids mutating global document.
+ * Uses Proxy to properly delegate all document properties while overriding query methods.
+ */
+function createScopedDocument(container: HTMLElement): Document {
+  const realDocument = document;
+  
+  return new Proxy(realDocument, {
+    get(target, prop) {
+      // Override query methods to scope to container
+      if (prop === 'getElementById') {
+        return function(id: string) {
+          const containerResult = container.querySelector('#' + id) as HTMLElement;
+          return containerResult || realDocument.getElementById(id);
+        };
+      }
+      if (prop === 'querySelector') {
+        return function(selector: string) {
+          const containerResult = container.querySelector(selector);
+          return containerResult || realDocument.querySelector(selector);
+        };
+      }
+      if (prop === 'querySelectorAll') {
+        return function(selector: string) {
+          const containerResults = container.querySelectorAll(selector);
+          return containerResults.length > 0 ? containerResults : realDocument.querySelectorAll(selector);
+        };
+      }
+      // Delegate all other properties to the real document
+      const value = (target as any)[prop];
+      if (typeof value === 'function') {
+        return value.bind(target);
+      }
+      return value;
+    },
+  }) as Document;
+}
 
 /**
  * Extracts <style> tags from HTML using DOM parsing and returns both the styles and cleaned HTML
@@ -17,34 +56,57 @@ function extractStyles(html: string): { styles: string[]; cleanedHtml: string } 
   }
   
   try {
-    // Create a temporary DOM element to parse the HTML as actual DOM elements
     const tempDiv = document.createElement('div');
-    
-    // Set innerHTML to parse the HTML string into actual DOM elements
     tempDiv.innerHTML = html;
-    
-    // Find all style tags using DOM querySelector (parses as actual elements)
     const styleTags = tempDiv.querySelectorAll('style');
     
-    // Extract style content from each style tag
     styleTags.forEach((styleTag) => {
-      // Use textContent first (more reliable), fallback to innerHTML
       const styleContent = styleTag.textContent || styleTag.innerHTML || '';
       if (styleContent.trim()) {
         styles.push(styleContent.trim());
       }
-      // Remove the style tag from the DOM
       styleTag.remove();
     });
     
-    // Get the cleaned HTML without style tags (as string)
     const cleanedHtml = tempDiv.innerHTML;
     
     return { styles, cleanedHtml };
   } catch (error) {
     console.error('[HTMLApp] Error extracting styles:', error);
-    // If DOM parsing fails, return original HTML without styles
     return { styles, cleanedHtml: html };
+  }
+}
+
+function extractScripts(html: string): { scripts: string[]; cleanedHtml: string } {
+  const scripts: string[] = [];
+  
+  if (!html || typeof html !== 'string') {
+    return { scripts, cleanedHtml: html || '' };
+  }
+  
+  try {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    
+    const scriptTags = tempDiv.querySelectorAll('script');
+    
+    scriptTags.forEach((scriptTag) => {
+      if (scriptTag.hasAttribute('src')) {
+        scriptTag.remove();
+        return;
+      }
+      
+      const scriptContent = scriptTag.textContent || scriptTag.innerHTML || '';
+      if (scriptContent.trim()) {
+        scripts.push(scriptContent.trim());
+      }
+      scriptTag.remove();
+    });
+    
+    return { scripts, cleanedHtml: tempDiv.innerHTML };
+  } catch (error) {
+    console.error('[HTMLApp] Error extracting scripts:', error);
+    return { scripts, cleanedHtml: html };
   }
 }
 
@@ -182,67 +244,57 @@ function scopeStylesForContainer(styles: string[], containerClass: string): stri
   const sanitizedContainerRaw = containerClass.startsWith('.') ? containerClass.slice(1) : containerClass;
   const sanitizedContainer = sanitizedContainerRaw || 'html-app';
 
-  return styles.map((styleBlock) => {
-    if (!styleBlock || !styleBlock.trim()) {
-      return styleBlock;
-    }
+  return styles
+    .map((styleBlock) => {
+      if (!styleBlock || !styleBlock.trim()) {
+        return null;
+      }
 
-    try {
-      // Fix common CSS syntax issues before parsing
-      const fixedCSS = fixCSSSyntax(styleBlock);
-      
-      // Try parsing with PostCSS
-      const root = postcss.parse(fixedCSS, { from: undefined });
-
-      root.walkRules((rule) => {
-        if (!rule.selector) {
-          return;
-        }
-
-        const parent = rule.parent;
-        if (parent && parent.type === 'atrule') {
-          const atRuleName = (parent as any).name as string | undefined;
-          if (atRuleName === 'keyframes') {
-            // Keyframe selectors (from, to, 0%) should not be scoped
-            return;
-          }
-        }
-
-        let selectors: string[];
-        try {
-          selectors = (rule as any).selectors as string[];
-        } catch {
-          return;
-        }
-
-        if (!Array.isArray(selectors)) {
-          return;
-        }
-
-        (rule as any).selectors = selectors.map((selector) => scopeSelector(selector, sanitizedContainer));
-      });
-
-      return root.toString();
-    } catch (error) {
-      console.error('[HTMLApp] Failed to scope styles. Error:', error);
-      console.error('[HTMLApp] Problematic CSS (first 500 chars):', styleBlock.substring(0, 500));
-      
-      // If parsing fails, try to return the fixed CSS without scoping as fallback
       try {
         const fixedCSS = fixCSSSyntax(styleBlock);
-        return fixedCSS;
-      } catch (fixError) {
-        console.error('[HTMLApp] Failed to fix CSS syntax:', fixError);
-        // Last resort: return original (might have issues but won't crash)
-        return styleBlock;
+        const root = postcss.parse(fixedCSS, { from: undefined });
+
+        root.walkRules((rule) => {
+          if (!rule.selector) {
+            return;
+          }
+
+          const parent = rule.parent;
+          if (parent && parent.type === 'atrule') {
+            const atRuleName = parent.name;
+            if (atRuleName === 'keyframes') {
+              return;
+            }
+          }
+
+          const selectors = rule.selectors;
+          if (!Array.isArray(selectors)) {
+            return;
+          }
+
+          rule.selectors = selectors.map((selector) => scopeSelector(selector, sanitizedContainer));
+        });
+
+        return root.toString();
+      } catch (error) {
+        console.error('[HTMLApp] Failed to scope styles:', error);
+        try {
+          return fixCSSSyntax(styleBlock);
+        } catch {
+          return null;
+        }
       }
-    }
-  });
+    })
+    .filter((style): style is string => style !== null);
 }
 
-export default function HTMLApp({ windowId, initialData }: AppComponentProps) {
+function HTMLApp({ windowId, initialData }: AppComponentProps) {
   const html = initialData?.html || '';
   const styleElementRefs = useRef<HTMLStyleElement[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const hasInitializedRef = useRef(false);
+  const lastHtmlRef = useRef<string>('');
+  const mountCountRef = useRef(0);
 
   const containerClass = useMemo(() => {
     const baseId = typeof windowId === 'string' ? windowId : String(windowId ?? 'window');
@@ -250,25 +302,58 @@ export default function HTMLApp({ windowId, initialData }: AppComponentProps) {
     return normalized ? `html-app-${normalized}` : 'html-app';
   }, [windowId]);
 
-  // Extract styles and sanitize HTML
-  const { sanitizedHTML, extractedStyles } = useMemo(() => {
-    if (!html) return { sanitizedHTML: '', extractedStyles: [] };
+  const { sanitizedHTML, extractedStyles, extractedScripts } = useMemo(() => {
+    if (!html) return { sanitizedHTML: '', extractedStyles: [], extractedScripts: [] };
     
-    // Extract styles BEFORE sanitization to preserve them
-    const { styles, cleanedHtml } = extractStyles(html);
+    const { styles, cleanedHtml: htmlAfterStyles } = extractStyles(html);
+    const { scripts, cleanedHtml: htmlAfterScripts } = extractScripts(htmlAfterStyles);
     
-    // Use DOMPurify to sanitize the cleaned HTML (without style tags)
-    const sanitized = DOMPurify.sanitize(cleanedHtml, {
-      ALLOWED_TAGS: ['div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'img', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'button', 'input', 'form', 'label', 'select', 'option', 'textarea', 'br', 'hr', 'strong', 'em', 'b', 'i', 'u', 'code', 'pre', 'script'],
+    const sanitized = DOMPurify.sanitize(htmlAfterScripts, {
+      ALLOWED_TAGS: ['div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'img', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'button', 'input', 'form', 'label', 'select', 'option', 'textarea', 'br', 'hr', 'strong', 'em', 'b', 'i', 'u', 'code', 'pre', 'script', 'canvas', 'svg'],
       ALLOWED_ATTR: ['href', 'src', 'alt', 'class', 'id', 'style', 'width', 'height', 'type', 'value', 'name', 'placeholder', 'onclick', 'onchange', 'oninput', 'onsubmit', 'onkeypress', 'onkeydown', 'onkeyup', 'onfocus', 'onblur', 'onload', 'readonly', 'checked', 'disabled'],
       ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|data):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
       KEEP_CONTENT: true,
     });
     
-    return { sanitizedHTML: sanitized, extractedStyles: styles };
+    return { sanitizedHTML: sanitized, extractedStyles: styles, extractedScripts: scripts };
   }, [html]);
 
   const scopedStyles = useMemo(() => scopeStylesForContainer(extractedStyles, containerClass), [extractedStyles, containerClass]);
+
+  // Instrumentation: Log mount/unmount and container ref changes
+  useEffect(() => {
+    mountCountRef.current += 1;
+    const mountId = mountCountRef.current;
+    console.log(`[HTMLApp] Mount #${mountId} for windowId: ${windowId}, containerClass: ${containerClass}`);
+    
+    return () => {
+      console.log(`[HTMLApp] Unmount #${mountId} for windowId: ${windowId}, containerClass: ${containerClass}`);
+    };
+  }, [windowId, containerClass]);
+
+  // Track container ref changes
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container) {
+      console.log(`[HTMLApp] Container ref set for ${containerClass}, element:`, container);
+      
+      const observer = new MutationObserver((mutations) => {
+        console.log(`[HTMLApp] Container DOM mutations detected for ${containerClass}:`, mutations.length);
+      });
+      
+      observer.observe(container, { 
+        childList: true, 
+        subtree: true, 
+        attributes: true,
+        attributeOldValue: true 
+      });
+      
+      return () => {
+        observer.disconnect();
+        console.log(`[HTMLApp] Container observer disconnected for ${containerClass}`);
+      };
+    }
+  }, [containerClass]);
 
   // Inject scoped styles into document head
   useEffect(() => {
@@ -280,19 +365,14 @@ export default function HTMLApp({ windowId, initialData }: AppComponentProps) {
       styleElementRefs.current = [];
     };
 
-    // Always clear any previous styles for this window before injecting new ones
     removeExistingStyles();
 
     if (scopedStyles.length === 0) {
-      console.log(`[HTMLApp] No scoped styles to inject for container ${containerClass}`);
       return removeExistingStyles;
     }
 
-    console.log(`[HTMLApp] Injecting ${scopedStyles.length} scoped style block(s) for ${containerClass}`);
-
     scopedStyles.forEach((styleContent, index) => {
       if (!styleContent || !styleContent.trim()) {
-        console.warn(`[HTMLApp] Skipping empty scoped style block at index ${index}`);
         return;
       }
 
@@ -305,17 +385,83 @@ export default function HTMLApp({ windowId, initialData }: AppComponentProps) {
 
       document.head.appendChild(styleElement);
       styleElementRefs.current.push(styleElement);
-
-      console.log(`[HTMLApp] Injected scoped style block ${index + 1}/${scopedStyles.length} (length: ${styleContent.length})`);
     });
 
-    // Cleanup function: remove injected styles when component unmounts or dependencies change
     return removeExistingStyles;
   }, [scopedStyles, containerClass]);
+
+  // Execute scripts with scoped document (no global overrides)
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || extractedScripts.length === 0) {
+      return;
+    }
+
+    // Reset initialization flag if HTML content changed
+    if (lastHtmlRef.current !== html) {
+      hasInitializedRef.current = false;
+      lastHtmlRef.current = html;
+      console.log(`[HTMLApp] HTML content changed for ${containerClass}, resetting initialization flag`);
+    }
+
+    // Guard against re-execution unless HTML changed
+    if (hasInitializedRef.current) {
+      console.log(`[HTMLApp] Scripts already initialized for ${containerClass}, skipping re-execution`);
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const currentContainer = containerRef.current;
+        if (!currentContainer || !currentContainer.innerHTML.trim()) {
+          console.warn(`[HTMLApp] Container not ready for ${containerClass}`);
+          return;
+        }
+
+        // Verify container is still in DOM
+        if (!currentContainer.isConnected) {
+          console.warn(`[HTMLApp] Container not connected to DOM for ${containerClass}`);
+          return;
+        }
+
+        console.log(`[HTMLApp] Executing ${extractedScripts.length} script(s) for ${containerClass} using scoped document`);
+
+        // Create scoped document for this container
+        const scopedDoc = createScopedDocument(currentContainer);
+
+        // Execute each script with scoped document
+        extractedScripts.forEach((scriptContent, index) => {
+          if (!scriptContent || !scriptContent.trim()) {
+            return;
+          }
+
+          try {
+            // Pass scoped document, container, and other common globals
+            const executeScript = new Function(
+              'container',
+              'containerClass',
+              'document',
+              'window',
+              'console',
+              scriptContent
+            );
+            executeScript(currentContainer, containerClass, scopedDoc, window, console);
+            console.log(`[HTMLApp] Successfully executed script ${index + 1}/${extractedScripts.length} for ${containerClass}`);
+          } catch (error) {
+            console.error(`[HTMLApp] Error executing script ${index + 1}/${extractedScripts.length} for ${containerClass}:`, error);
+          }
+        });
+
+        hasInitializedRef.current = true;
+        console.log(`[HTMLApp] Script initialization complete for ${containerClass}`);
+      }, 10);
+    });
+  }, [extractedScripts, containerClass, html]);
 
   return (
     <div className="w-full h-full overflow-auto p-4" style={{ background: 'var(--dark-brown-surface)' }}>
       <div
+        ref={containerRef}
         className={`w-full h-full ${containerClass}`}
         data-container-class={containerClass}
         dangerouslySetInnerHTML={{ __html: sanitizedHTML }}
@@ -323,4 +469,7 @@ export default function HTMLApp({ windowId, initialData }: AppComponentProps) {
     </div>
   );
 }
+
+// Memoize to prevent unnecessary re-renders that could cause container remounts
+export default memo(HTMLApp);
 

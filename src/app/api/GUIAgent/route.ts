@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
+import Cerebras from '@cerebras/cerebras_cloud_sdk';
 import { GoogleGenAI } from '@google/genai';
 
+const CEREBRAS_API_KEY = process.env.CEREBRAS_API_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+if (!CEREBRAS_API_KEY) {
+  throw new Error('CEREBRAS_API_KEY environment variable is required');
+}
 if (!GEMINI_API_KEY) {
   throw new Error('GEMINI_API_KEY environment variable is required');
 }
-const PRIMARY_MODEL = 'gemini-2.5-flash';
+
+const PRIMARY_MODEL = 'gpt-oss-120b';
 const FALLBACK_MODEL = 'gemini-2.5-flash';
+
+const cerebras = new Cerebras({
+  apiKey: CEREBRAS_API_KEY,
+});
 
 const genAI = new GoogleGenAI({
   apiKey: GEMINI_API_KEY,
@@ -33,14 +44,14 @@ const responseSchema = {
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
-  console.log('[GEMINI API] ===== Starting request =====');
+  console.log('[GUIAgent API] ===== Starting request =====');
   
   try {
     const { prompt } = await request.json();
-    console.log('[GEMINI API] Received prompt:', prompt);
+    console.log('[GUIAgent API] Received prompt:', prompt);
 
     if (!prompt || typeof prompt !== 'string') {
-      console.error('[GEMINI API] Invalid prompt:', prompt);
+      console.error('[GUIAgent API] Invalid prompt:', prompt);
       return NextResponse.json(
         { error: 'Prompt is required' },
         { status: 400 }
@@ -75,39 +86,58 @@ Requirements:
 11. Scope every CSS selector to that root container (e.g., ".app-root .card"), avoiding global selectors such as body, html, or :root
 12. Use unique, namespaced class names (e.g., "app-root__button", "app-root--primary") so styles do not conflict with other windows
 
-Generate the app now:`;
+Return your response as a JSON object with "title", "html", and "description" fields.`;
 
-    console.log('[GEMINI API] Sending request to Gemini API...');
+    console.log('[GUIAgent API] Sending request to Cerebras API...');
     
     const apiRequestStart = Date.now();
-    let response;
+    let responseText: string;
     let modelUsed = PRIMARY_MODEL;
     
     try {
-      console.log('[GEMINI API] Attempting with model:', PRIMARY_MODEL);
-      response = await genAI.models.generateContent({
-        model: PRIMARY_MODEL,
-        contents: systemPrompt,
-        config: {
-          responseMimeType: 'application/json',
-          responseJsonSchema: responseSchema,
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 8192,
-          thinkingConfig: {
-            thinkingBudget: 0,
+      console.log('[GUIAgent API] Attempting with Cerebras model:', PRIMARY_MODEL);
+      const cerebrasResponse = await cerebras.chat.completions.create({
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt,
           },
-        },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        model: PRIMARY_MODEL,
+        response_format: { type: 'json_object' },
+        temperature: 0.7,
+        top_p: 0.95,
+        max_completion_tokens: 8192,
+        stream: false,
       });
-      console.log(`[GEMINI API] Successfully used ${PRIMARY_MODEL}`);
+      
+      if ('error' in cerebrasResponse) {
+        const errorResponse = cerebrasResponse as { error?: { message?: string } };
+        throw new Error(`Cerebras API error: ${errorResponse.error?.message || 'Unknown error'}`);
+      }
+      
+      if (cerebrasResponse.object === 'chat.completion' && 'choices' in cerebrasResponse && Array.isArray(cerebrasResponse.choices)) {
+        const content = cerebrasResponse.choices[0]?.message?.content;
+        if (!content) {
+          throw new Error('No response content received from Cerebras API');
+        }
+        responseText = content;
+        console.log(`[GUIAgent API] Successfully used Cerebras model ${PRIMARY_MODEL}`);
+      } else {
+        throw new Error('Unexpected response format from Cerebras API');
+      }
     } catch (primaryError) {
-      console.warn(`[GEMINI API] ${PRIMARY_MODEL} failed, attempting fallback to ${FALLBACK_MODEL}`);
-      console.warn('[GEMINI API] Primary model error:', primaryError instanceof Error ? primaryError.message : primaryError);
+      console.warn(`[GUIAgent API] Cerebras model ${PRIMARY_MODEL} failed, attempting fallback to Gemini ${FALLBACK_MODEL}`);
+      console.warn('[GUIAgent API] Primary model error:', primaryError instanceof Error ? primaryError.message : primaryError);
       
       try {
         modelUsed = FALLBACK_MODEL;
-        response = await genAI.models.generateContent({
+        console.log('[GEMINI API] Attempting with Gemini model:', FALLBACK_MODEL);
+        const geminiResponse = await genAI.models.generateContent({
           model: FALLBACK_MODEL,
           contents: systemPrompt,
           config: {
@@ -122,37 +152,38 @@ Generate the app now:`;
             },
           },
         });
+        
+        const text = geminiResponse.text;
+        if (!text) {
+          throw new Error('No response text received from Gemini API');
+        }
+        responseText = text;
         console.log(`[GEMINI API] Successfully used fallback model ${FALLBACK_MODEL}`);
       } catch (fallbackError) {
-        console.error(`[GEMINI API] Both ${PRIMARY_MODEL} and ${FALLBACK_MODEL} failed`);
+        console.error(`[GUIAgent API] Both ${PRIMARY_MODEL} and ${FALLBACK_MODEL} failed`);
         throw fallbackError;
       }
     }
     
     const apiRequestTime = Date.now() - apiRequestStart;
-    console.log(`[GEMINI API] API request completed in ${apiRequestTime}ms using model: ${modelUsed}`);
-
-    const responseText = response.text;
-    if (!responseText) {
-      throw new Error('No response text received from Gemini API');
-    }
-    console.log('[GEMINI API] Response received, length:', responseText.length);
+    console.log(`[GUIAgent API] API request completed in ${apiRequestTime}ms using model: ${modelUsed}`);
+    console.log('[GUIAgent API] Response received, length:', responseText.length);
     
     const parseStart = Date.now();
     let parsed;
     try {
       parsed = JSON.parse(responseText);
     } catch (parseError) {
-      console.error('[GEMINI API] JSON parse error:', parseError);
-      parsed = parseGeminiResponse(responseText, prompt);
+      console.error('[GUIAgent API] JSON parse error:', parseError);
+      parsed = parseGUIAgentResponse(responseText, prompt);
     }
     
     const parseTime = Date.now() - parseStart;
     
     if (!parsed.title || !parsed.html) {
-      console.error('[GEMINI API] Invalid response structure:', parsed);
+      console.error('[GUIAgent API] Invalid response structure:', parsed);
       return NextResponse.json(
-        { error: 'Invalid response format from Gemini API' },
+        { error: 'Invalid response format from API' },
         { status: 500 }
       );
     }
@@ -173,7 +204,7 @@ Generate the app now:`;
       description: parsed.description || `Generated app for: ${prompt}`,
     };
     
-    console.log('[GEMINI API] Parsed result:', {
+    console.log('[GUIAgent API] Parsed result:', {
       title: result.title,
       htmlLength: result.html.length,
       htmlPreview: result.html.substring(0, 200),
@@ -181,19 +212,19 @@ Generate the app now:`;
     });
     
     const totalTime = Date.now() - startTime;
-    console.log(`[GEMINI API] Total processing time: ${totalTime}ms (API: ${apiRequestTime}ms, Parse: ${parseTime}ms)`);
-    console.log('[GEMINI API] ===== Request completed =====');
+    console.log(`[GUIAgent API] Total processing time: ${totalTime}ms (API: ${apiRequestTime}ms, Parse: ${parseTime}ms)`);
+    console.log('[GUIAgent API] ===== Request completed =====');
     
     return NextResponse.json(result);
   } catch (error) {
     const totalTime = Date.now() - startTime;
-    console.error('[GEMINI API] ===== Error occurred =====');
-    console.error('[GEMINI API] Error after', totalTime, 'ms:', error);
-    console.error('[GEMINI API] Error details:', error instanceof Error ? {
+    console.error('[GUIAgent API] ===== Error occurred =====');
+    console.error('[GUIAgent API] Error after', totalTime, 'ms:', error);
+    console.error('[GUIAgent API] Error details:', error instanceof Error ? {
       message: error.message,
       stack: error.stack,
     } : error);
-    console.error('[GEMINI API] ===== End error =====');
+    console.error('[GUIAgent API] ===== End error =====');
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to generate app' },
       { status: 500 }
@@ -201,8 +232,8 @@ Generate the app now:`;
   }
 }
 
-function parseGeminiResponse(text: string, originalPrompt: string): { title: string; html: string; description?: string } {
-  console.log('[PARSE] Starting to parse Gemini response');
+function parseGUIAgentResponse(text: string, originalPrompt: string): { title: string; html: string; description?: string } {
+  console.log('[PARSE] Starting to parse GUIAgent response');
   console.log('[PARSE] Raw text length:', text.length);
   
   let cleanedText = text.trim();

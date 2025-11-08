@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Rnd } from 'react-rnd';
-import { getAIAgentService } from '@/lib/aiAgent';
 import { makeAppFromHTML } from '@/lib/appRegistry';
 import { getPromptPlaceholder } from '@/lib/promptText';
 import { useAnimatedText } from '@/hooks/useAnimatedText';
@@ -112,21 +111,33 @@ export default function PromptBar() {
     setIsModalOpen(true);
 
     try {
-      const aiService = await getAIAgentService();
-      const result = await aiService.generateAppFromPrompt(prompt);
+      const response = await fetch('/api/GUIAgent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt }),
+      });
 
-      if (result.success) {
-        makeAppFromHTML({
-          title: result.data.title,
-          html: result.data.html,
-        });
-        
-        setPrompt('');
-        setShowOverlay(true);
-        setIsModalOpen(false);
-      } else {
-        setError(result.error);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `API error: ${response.status}`);
       }
+
+      const data = await response.json();
+
+      if (!data.title || !data.html) {
+        throw new Error('Invalid response format from API');
+      }
+
+      makeAppFromHTML({
+        title: data.title,
+        html: data.html,
+      });
+      
+      setPrompt('');
+      setShowOverlay(true);
+      setIsModalOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {

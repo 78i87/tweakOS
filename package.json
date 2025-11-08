@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@cerebras/cerebras_cloud_sdk": "^1.0.0",
     "@google/genai": "^1.29.0",
     "clsx": "^2.1.1",
     "dompurify": "^3.3.0",
