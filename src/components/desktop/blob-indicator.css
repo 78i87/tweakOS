@@ -1,0 +1,228 @@
+/* Liquid blob indicator animation - Exact CodePen style */
+.blob-indicator {
+  filter: url(#goo);
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+
+.blob-indicator > div {
+  width: 80px;
+  height: 80px;
+  background: rgba(163, 177, 198, 0.8);
+  border-radius: 500px;
+  display: inline-block;
+  position: absolute;
+  box-shadow: 0px 0px 50px rgba(163, 177, 198, 0.6);
+  top: 0;
+  left: 0;
+  animation: anim-1 2.5s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+.blob-indicator > div:nth-child(2) {
+  width: 45px;
+  height: 45px;
+  animation: anim-2 2.5s ease-in-out infinite;
+  animation-delay: 1.8s;
+}
+
+.blob-indicator > div:nth-child(3) {
+  width: 55px;
+  height: 55px;
+  animation: anim-3 2.5s ease-in-out infinite;
+  animation-delay: 2.3s;
+}
+
+.blob-indicator > div:nth-child(4) {
+  width: 38px;
+  height: 38px;
+  animation: anim-4 2.5s ease-in-out infinite;
+  animation-delay: 1.2s;
+}
+
+.blob-indicator > div:nth-child(5) {
+  width: 52px;
+  height: 52px;
+  animation: anim-5 2.5s ease-in-out infinite;
+  animation-delay: 2.7s;
+}
+
+.blob-indicator > div:nth-child(6) {
+  width: 41px;
+  height: 41px;
+  animation: anim-6 2.5s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+
+.blob-indicator > div:nth-child(7) {
+  width: 48px;
+  height: 48px;
+  animation: anim-7 2.5s ease-in-out infinite;
+  animation-delay: 2.1s;
+}
+
+.blob-indicator > div:nth-child(8) {
+  width: 35px;
+  height: 35px;
+  animation: anim-8 2.5s ease-in-out infinite;
+  animation-delay: 1.9s;
+}
+
+.blob-indicator > div:nth-child(9) {
+  width: 50px;
+  height: 50px;
+  animation: anim-9 2.5s ease-in-out infinite;
+  animation-delay: 2.5s;
+}
+
+.blob-indicator > div:nth-child(10) {
+  width: 43px;
+  height: 43px;
+  animation: anim-10 2.5s ease-in-out infinite;
+  animation-delay: 1.3s;
+}
+
+.blob-indicator > div:nth-child(11) {
+  width: 36px;
+  height: 36px;
+  animation: anim-11 2.5s ease-in-out infinite;
+  animation-delay: 2.2s;
+}
+
+.blob-indicator > div:nth-child(12) {
+  width: 49px;
+  height: 49px;
+  animation: anim-12 2.5s ease-in-out infinite;
+  animation-delay: 1.7s;
+}
+
+.blob-indicator > div:nth-child(13) {
+  width: 40px;
+  height: 40px;
+  animation: anim-13 2.5s ease-in-out infinite;
+  animation-delay: 2.4s;
+}
+
+.blob-indicator > div:nth-child(14) {
+  width: 47px;
+  height: 47px;
+  animation: anim-14 2.5s ease-in-out infinite;
+  animation-delay: 1.6s;
+}
+
+.blob-indicator > div:nth-child(15) {
+  width: 33px;
+  height: 33px;
+  animation: anim-15 2.5s ease-in-out infinite;
+  animation-delay: 2.6s;
+}
+
+.blob-indicator > div:nth-child(16) {
+  width: 51px;
+  height: 51px;
+  animation: anim-16 2.5s ease-in-out infinite;
+  animation-delay: 1.4s;
+}
+
+@keyframes anim-1 {
+  0% { left: 0; top: 0; }
+  50% { left: -35px; top: -28px; }
+  100% { left: 0; top: 0; }
+}
+
+@keyframes anim-2 {
+  0% { left: 0; top: 0; }
+  50% { left: 42px; top: -35px; }
+  100% { left: 0; top: 0; }
+}
+
+@keyframes anim-3 {
+  0% { left: 0; top: 0; }
+  50% { left: -28px; top: 42px; }
+  100% { left: 0; top: 0; }
+}
+
+@keyframes anim-4 {
+  0% { left: 0; top: 0; }
+  50% { left: 15px; top: -42px; }
+  100% { left: 0; top: 0; }
+}
+
+@keyframes anim-5 {
+  0% { left: 0; top: 0; }
+  50% { left: -45px; top: 28px; }
+  100% { left: 0; top: 0; }
+}
+
+@keyframes anim-6 {
+  0% { left: 0; top: 0; }
+  50% { left: 28px; top: 35px; }
+  100% { left: 0; top: 0; }
+}
+
+@keyframes anim-7 {
+  0% { left: 0; top: 0; }
+  50% { left: 55px; top: -20px; }
+  100% { left: 0; top: 0; }
+}
+
+@keyframes anim-8 {
+  0% { left: 0; top: 0; }
+  50% { left: -20px; top: -50px; }
+  100% { left: 0; top: 0; }
+}
+
+@keyframes anim-9 {
+  0% { left: 0; top: 0; }
+  50% { left: 38px; top: 22px; }
+  100% { left: 0; top: 0; }
+}
+
+@keyframes anim-10 {
+  0% { left: 0; top: 0; }
+  50% { left: -50px; top: -15px; }
+  100% { left: 0; top: 0; }
+}
+
+@keyframes anim-11 {
+  0% { left: 0; top: 0; }
+  50% { left: 50px; top: 40px; }
+  100% { left: 0; top: 0; }
+}
+
+@keyframes anim-12 {
+  0% { left: 0; top: 0; }
+  50% { left: -15px; top: -38px; }
+  100% { left: 0; top: 0; }
+}
+
+@keyframes anim-13 {
+  0% { left: 0; top: 0; }
+  50% { left: 22px; top: 45px; }
+  100% { left: 0; top: 0; }
+}
+
+@keyframes anim-14 {
+  0% { left: 0; top: 0; }
+  50% { left: -40px; top: -22px; }
+  100% { left: 0; top: 0; }
+}
+
+@keyframes anim-15 {
+  0% { left: 0; top: 0; }
+  50% { left: 33px; top: -33px; }
+  100% { left: 0; top: 0; }
+}
+
+@keyframes anim-16 {
+  0% { left: 0; top: 0; }
+  50% { left: -25px; top: 38px; }
+  100% { left: 0; top: 0; }
+}
+
+/* Erratic thinking animation when processing */
+.blob-thinking > div {
+  animation-duration: 1.2s !important;
+}
+

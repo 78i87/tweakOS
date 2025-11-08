@@ -70,12 +70,19 @@ export default function Window({ window: windowState }: WindowProps) {
     }
   };
 
-  const handleResizeStop = (_e: unknown, _direction: unknown, ref: HTMLElement) => {
+  const handleResizeStop = (
+    _e: unknown,
+    _direction: unknown,
+    ref: HTMLElement,
+    _delta: unknown,
+    position: { x: number; y: number }
+  ) => {
     if (!isMaximized) {
       updateWindowSize(windowState.id, {
         width: ref.offsetWidth,
         height: ref.offsetHeight,
       });
+      updateWindowPosition(windowState.id, position);
     }
   };
 
@@ -160,7 +167,7 @@ export default function Window({ window: windowState }: WindowProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden" style={{ margin: '8px', borderRadius: '12px', background: 'var(--beige-surface)' }}>
+      <div className="flex-1 overflow-hidden">
         <AppComponent windowId={windowState.id} initialData={windowState.data} />
       </div>
     </Rnd>

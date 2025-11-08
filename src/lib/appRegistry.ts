@@ -1,5 +1,7 @@
+import React from 'react';
 import { AppDefinition } from './types';
 import { useWindowStore } from './windowStore';
+import CloudIcon from '@/components/icons/CloudIcon';
 
 // Registry to store all available apps
 const appRegistry = new Map<string, AppDefinition>();
@@ -44,20 +46,18 @@ export function openAppWindow(appId: string, data?: any): void {
   openWindow(appId, app.title, data);
 }
 
-// AI Agent API: Create an app from HTML
 export function makeAppFromHTML(args: { title: string; html: string }): void {
   const appId = `html-${Date.now()}`;
   
-  // Dynamically import HTMLApp component
   import('../apps/html/HTMLApp').then((module) => {
     const HTMLApp = module.default;
     registerApp({
       appId,
       title: args.title,
+      icon: React.createElement(CloudIcon, { size: 20 }),
       component: HTMLApp,
     });
     
-    // Open the window with the HTML content
     openAppWindow(appId, { html: args.html });
   });
 }
