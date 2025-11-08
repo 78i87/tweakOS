@@ -1,11 +1,11 @@
 import React from 'react';
 
-interface BlobIconProps {
+interface CloudIconProps {
   size?: number;
   className?: string;
 }
 
-export default function BlobIcon({ size = 20, className }: BlobIconProps) {
+export default function CloudIcon({ size = 20, className }: CloudIconProps) {
   // Cloud-shaped icon using SVG path
   // Creates a fluffy cloud shape with rounded bumps
   return (

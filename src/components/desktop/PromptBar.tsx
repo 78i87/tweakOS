@@ -5,6 +5,7 @@ import { Send, Loader2, AlertCircle } from 'lucide-react';
 import { getAIAgentService } from '@/lib/aiAgent';
 import { makeAppFromHTML } from '@/lib/appRegistry';
 import clsx from 'clsx';
+import './blob-indicator.css';
 
 export default function PromptBar() {
   const [prompt, setPrompt] = useState('');
@@ -125,12 +126,40 @@ export default function PromptBar() {
           }
         }}
       >
+        {/* SVG filter for goo effect */}
+        <svg width="0" height="0" style={{ position: 'absolute' }}>
+          <defs>
+            <filter id="goo">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
+              <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo" />
+              <feComposite in="SourceGraphic" in2="goo" operator="atop"/>
+            </filter>
+          </defs>
+        </svg>
+
         {/* Blob indicator - always visible when hovered */}
         {isHovered && (
           <div className={clsx(
             'blob-indicator absolute bottom-0 right-0 w-20 h-20 pointer-events-none',
             isLoading && 'blob-thinking'
-          )} />
+          )}>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+          </div>
         )}
         
         {/* Prompt panel - slides in from right toward center */}
