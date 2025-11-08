@@ -46,11 +46,9 @@ export function openAppWindow(appId: string, data?: any): void {
   openWindow(appId, app.title, data);
 }
 
-// AI Agent API: Create an app from HTML
 export function makeAppFromHTML(args: { title: string; html: string }): void {
   const appId = `html-${Date.now()}`;
   
-  // Dynamically import HTMLApp component
   import('../apps/html/HTMLApp').then((module) => {
     const HTMLApp = module.default;
     registerApp({
@@ -60,7 +58,6 @@ export function makeAppFromHTML(args: { title: string; html: string }): void {
       component: HTMLApp,
     });
     
-    // Open the window with the HTML content
     openAppWindow(appId, { html: args.html });
   });
 }

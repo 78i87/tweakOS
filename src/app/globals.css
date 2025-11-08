@@ -218,6 +218,6 @@ textarea::placeholder {
 
 /* Override placeholder color for prompt bar */
 .prompt-bar-textarea::placeholder {
-  color: #8B6F47 !important; /* medium brown */
+  color: #8B6F47 !important;
   opacity: 1 !important;
 }

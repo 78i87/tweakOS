@@ -6,8 +6,6 @@ interface CloudIconProps {
 }
 
 export default function CloudIcon({ size = 20, className }: CloudIconProps) {
-  // Cloud-shaped icon using SVG path
-  // Creates a fluffy cloud shape with rounded bumps
   return (
     <svg
       width={size}

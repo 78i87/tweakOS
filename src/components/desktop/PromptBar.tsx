@@ -20,13 +20,11 @@ export default function PromptBar() {
   const dragStartPositionRef = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
-    // Focus input when modal opens
     if (isModalOpen && inputRef.current) {
       inputRef.current.focus();
     }
   }, [isModalOpen]);
 
-  // Auto-resize textarea based on content
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.style.height = 'auto';
@@ -34,18 +32,15 @@ export default function PromptBar() {
     }
   }, [prompt, isModalOpen]);
 
-  // Set initial blob position client-side after mount to avoid hydration mismatch
   useEffect(() => {
     setBlobPosition({
-      x: window.innerWidth - 80 - 24, // blob width (80px) + right margin (24px)
-      y: window.innerHeight - 80 - 24, // blob height (80px) + bottom margin (24px)
+      x: window.innerWidth - 80 - 24,
+      y: window.innerHeight - 80 - 24,
     });
   }, []);
 
-  // Update blob position on window resize to keep it in bottom-right
   useEffect(() => {
     const handleResize = () => {
-      // Only update if blob is near the bottom-right (within 50px)
       const isNearBottomRight = 
         Math.abs(blobPosition.x - (window.innerWidth - 80 - 24)) < 50 &&
         Math.abs(blobPosition.y - (window.innerHeight - 80 - 24)) < 50;
@@ -62,7 +57,6 @@ export default function PromptBar() {
     return () => window.removeEventListener('resize', handleResize);
   }, [blobPosition]);
 
-  // Handle click outside to close prompt bar
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -93,61 +87,26 @@ export default function PromptBar() {
       return;
     }
 
-    const startTime = Date.now();
-    console.log('[PROMPT BAR] ===== Starting app generation =====');
-    console.log('[PROMPT BAR] Prompt:', prompt);
-
     setIsLoading(true);
     setError(null);
-    // Keep modal open during loading so prompt stays visible
     setIsModalOpen(true);
 
     try {
-      const serviceStart = Date.now();
-      console.log('[PROMPT BAR] Getting AI service...');
       const aiService = await getAIAgentService();
-      console.log('[PROMPT BAR] AI service obtained in', Date.now() - serviceStart, 'ms');
-      
-      const generateStart = Date.now();
-      console.log('[PROMPT BAR] Generating app from prompt...');
       const result = await aiService.generateAppFromPrompt(prompt);
-      console.log('[PROMPT BAR] Generation completed in', Date.now() - generateStart, 'ms');
-      console.log('[PROMPT BAR] Result:', {
-        success: result.success,
-        hasData: !!(result.success && result.data),
-        title: result.success ? result.data.title : undefined,
-        htmlLength: result.success ? result.data.html.length : undefined,
-      });
 
       if (result.success) {
-        const appStart = Date.now();
-        console.log('[PROMPT BAR] Creating app from HTML...');
-        console.log('[PROMPT BAR] Title:', result.data.title);
-        console.log('[PROMPT BAR] HTML length:', result.data.html.length);
-        console.log('[PROMPT BAR] HTML preview (first 300 chars):', result.data.html.substring(0, 300));
-        
-        // Create app from generated HTML
         makeAppFromHTML({
           title: result.data.title,
           html: result.data.html,
         });
         
-        console.log('[PROMPT BAR] App created in', Date.now() - appStart, 'ms');
-        
-        const totalTime = Date.now() - startTime;
-        console.log(`[PROMPT BAR] Total time: ${totalTime}ms`);
-        console.log('[PROMPT BAR] ===== App generation completed =====');
-        
-        // Clear prompt on success and close modal
         setPrompt('');
         setIsModalOpen(false);
       } else {
-        console.error('[PROMPT BAR] Generation failed:', result.error);
         setError(result.error);
       }
     } catch (err) {
-      const totalTime = Date.now() - startTime;
-      console.error('[PROMPT BAR] Error after', totalTime, 'ms:', err);
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setIsLoading(false);
@@ -165,7 +124,6 @@ export default function PromptBar() {
   };
 
   const handleDoubleClick = () => {
-    // Don't open modal if user just dragged
     if (didDragRef.current) {
       didDragRef.current = false;
       return;
@@ -193,16 +151,8 @@ export default function PromptBar() {
     }
   };
 
-  const handleCloseModal = () => {
-    if (!isLoading) {
-      setIsModalOpen(false);
-      setError(null);
-    }
-  };
-
   return (
     <>
-      {/* SVG filter for goo effect */}
       <svg width="0" height="0" style={{ position: 'absolute' }}>
         <defs>
           <filter id="goo">
@@ -213,7 +163,6 @@ export default function PromptBar() {
         </defs>
       </svg>
 
-      {/* Blob indicator - always visible, draggable */}
       <Rnd
         position={blobPosition}
         onDragStart={handleDragStart}
@@ -251,15 +200,14 @@ export default function PromptBar() {
         </div>
       </Rnd>
 
-      {/* Minimal Caret-Only Prompt Bar - centered with blob */}
       {isModalOpen && (
         <div
           ref={modalRef}
           className="fixed z-[100] transition-all duration-300 ease-out"
           style={{
-            top: `${blobPosition.y + 40}px`, // blob center (blob is 80px tall, so center is y + 40)
+            top: `${blobPosition.y + 40}px`,
             right: `${window.innerWidth - blobPosition.x - 80}px`,
-            transform: 'translateY(-50%)', // Center vertically
+            transform: 'translateY(-50%)',
           }}
         >
           <form onSubmit={handleSubmit} className="relative">
