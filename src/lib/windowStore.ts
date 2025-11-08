@@ -77,11 +77,13 @@ export const useWindowStore = create<WindowStore>((set) => ({
   focusWindow: (id: string) => {
     set((state) => {
       const maxZIndex = Math.max(...state.windows.map((w) => w.zIndex), 0);
+      // Ensure focused window appears above intro overlay (z-index 1000)
+      const newZIndex = Math.max(maxZIndex + 1, 1001);
       return {
         windows: state.windows.map((w) =>
-          w.id === id ? { ...w, zIndex: maxZIndex + 1 } : w
+          w.id === id ? { ...w, zIndex: newZIndex } : w
         ),
-        nextZIndex: maxZIndex + 2,
+        nextZIndex: newZIndex + 1,
       };
     });
   },
