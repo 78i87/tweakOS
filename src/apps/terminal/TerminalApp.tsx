@@ -754,7 +754,7 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
   return (
     <div className="w-full h-full flex min-h-0 flex-col" style={{ background: 'var(--dark-brown-surface)' }}>
       {/* Terminal */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 font-mono text-sm" style={{ color: 'var(--dark-brown-text)' }}>
+      <div className="flex-1 min-h-0 overflow-y-auto text-base" style={{ color: 'var(--dark-brown-text)', padding: '16px', fontFamily: "'Courier New', 'Monaco', 'Menlo', 'Consolas', 'Liberation Mono', 'DejaVu Sans Mono', monospace" }}>
         {history.map((entry, idx) => (
           <div key={idx} className="mb-2">
             {entry.isAIText ? (

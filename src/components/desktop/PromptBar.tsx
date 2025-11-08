@@ -310,7 +310,7 @@ export default function PromptBar({ showBlob = true }: PromptBarProps) {
                 rows={1}
                 className={clsx(
                   'bg-transparent border-0 outline-none',
-                  'text-xl font-bold tracking-wide',
+                  'text-2xl font-bold tracking-wide',
                   'placeholder:text-gray-400',
                   'min-w-[200px] max-w-[350px]',
                   'resize-none overflow-y-auto',
@@ -329,7 +329,7 @@ export default function PromptBar({ showBlob = true }: PromptBarProps) {
                 <div
                   className={clsx(
                     'absolute inset-0 pointer-events-none',
-                    'text-xl font-bold tracking-wide',
+                    'text-2xl font-bold tracking-wide',
                     'leading-relaxed',
                     'whitespace-pre-wrap',
                     'overflow-hidden'
@@ -345,7 +345,7 @@ export default function PromptBar({ showBlob = true }: PromptBarProps) {
             
             {error && (
               <div 
-                className="absolute top-full mt-3 left-0 px-4 py-2 rounded-lg bg-red-500/90 backdrop-blur-sm text-white text-sm whitespace-nowrap shadow-lg"
+                className="absolute top-full mt-3 left-0 px-4 py-2 rounded-lg bg-red-500/90 backdrop-blur-sm text-white text-base whitespace-nowrap shadow-lg"
                 style={{
                   boxShadow: '0 0 20px rgba(239, 68, 68, 0.5)',
                 }}

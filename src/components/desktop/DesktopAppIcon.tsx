@@ -96,7 +96,7 @@ export default function DesktopAppIcon({
           {iconNode}
         </div>
         <span
-          className="text-xs text-[#2F2A22] font-medium"
+          className="text-sm text-[#2F2A22] font-medium"
           style={{ textShadow: '0 1px 2px rgba(255,255,255,0.8)' }}
         >
           {app.title}

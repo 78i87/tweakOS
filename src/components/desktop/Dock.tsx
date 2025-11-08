@@ -17,7 +17,7 @@ type DockEntry = {
 
 export default function Dock() {
   const windows = useWindows();
-  const { focusWindow, restoreWindow } = useWindowActions();
+  const { focusWindow, restoreWindow, minimizeWindow } = useWindowActions();
   const { getApp, openAppWindow } = useAppRegistry();
 
   const runningWindowMap = new Map(windows.map((win) => [win.appId, win]));
@@ -67,8 +67,18 @@ export default function Dock() {
     if (existingWindow) {
       if (existingWindow.status === 'minimized') {
         restoreWindow(existingWindow.id);
+        focusWindow(existingWindow.id);
+      } else {
+        // Check if this window is already focused (has the highest z-index)
+        const maxZIndex = Math.max(...windows.map((w) => w.zIndex), 0);
+        if (existingWindow.zIndex === maxZIndex) {
+          // Window is focused, minimize it
+          minimizeWindow(existingWindow.id);
+        } else {
+          // Window is not focused, focus it
+          focusWindow(existingWindow.id);
+        }
       }
-      focusWindow(existingWindow.id);
     } else {
       openAppWindow(appId);
     }

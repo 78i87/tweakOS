@@ -24,8 +24,8 @@ export default function NotepadApp({ windowId, initialData }: AppComponentProps)
           fontFamily: 'var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
           lineHeight: '1.8',
           border: 'none',
-          padding: '2px 2px',
-          fontSize: '14px',
+          padding: '16px',
+          fontSize: '18px',
           letterSpacing: '0.01em',
         }}
       />

@@ -19,4 +19,8 @@ export const pinnedApps: PinnedAppConfig[] = [
     appId: 'browser',
     defaultPosition: { x: 288, y: 32 },
   },
+  {
+    appId: 'cookie-clicker',
+    defaultPosition: { x: 416, y: 32 },
+  },
 ];

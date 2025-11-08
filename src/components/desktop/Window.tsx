@@ -140,8 +140,8 @@ export default function Window({ window: windowState }: WindowProps) {
         onDoubleClick={handleMaximize}
       >
         <div className="flex items-center gap-2" style={{ paddingLeft: '12px' }}>
-          {app.icon && windowState.appId !== 'terminal' && windowState.appId !== 'browser' && !windowState.appId.startsWith('html-') && <span className="w-4 h-4">{app.icon}</span>}
-          <span className="text-sm font-medium" style={{ color: 'var(--neu-text)' }}>{windowState.title}</span>
+          {app.icon && windowState.appId !== 'terminal' && windowState.appId !== 'browser' && windowState.appId !== 'cookie-clicker' && !windowState.appId.startsWith('html-') && <span className="w-4 h-4">{app.icon}</span>}
+          <span className="text-base font-medium" style={{ color: 'var(--neu-text)' }}>{windowState.title}</span>
         </div>
         <div className="flex items-center gap-1.5" style={{ marginRight: '12px' }}>
           <button
