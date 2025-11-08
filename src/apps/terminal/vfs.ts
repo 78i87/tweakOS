@@ -45,7 +45,12 @@ class VirtualFS {
       if (!data) return null;
       
       const parsed = JSON.parse(data);
-      return this.deserialize(parsed);
+      const node = this.deserialize(parsed);
+      // Root should always be a directory
+      if (node.type === 'directory') {
+        return node;
+      }
+      return null;
     } catch (e) {
       console.error('Failed to load VFS:', e);
       return null;
@@ -82,13 +87,13 @@ class VirtualFS {
     }
   }
 
-  private deserialize(data: any): DirectoryNode {
+  private deserialize(data: any): FSNode {
     if (data.type === 'file') {
       return {
         type: 'file',
         name: data.name,
         content: data.content || '',
-      } as FileNode;
+      };
     } else {
       const children = new Map<string, FSNode>();
       if (data.children && Array.isArray(data.children)) {
@@ -368,12 +373,12 @@ class VirtualFS {
 
   isDirectory(path: string, cwd: string = '/'): boolean {
     const node = this.getNode(path, cwd);
-    return node?.type === 'directory' ?? false;
+    return node !== null && node.type === 'directory';
   }
 
   isFile(path: string, cwd: string = '/'): boolean {
     const node = this.getNode(path, cwd);
-    return node?.type === 'file' ?? false;
+    return node !== null && node.type === 'file';
   }
 
   // Get filesystem snapshot for AI agent

@@ -249,6 +249,64 @@ export function executeCommand(
       }
     }
 
+    case 'date': {
+      const now = new Date();
+      const dateStr = now.toLocaleString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+      });
+      return { output: [dateStr], cwd };
+    }
+
+    case 'uname': {
+      if (typeof window === 'undefined') {
+        return { output: ['Unknown'], cwd };
+      }
+      
+      const platform = navigator.platform || 'Unknown';
+      const userAgent = navigator.userAgent || '';
+      
+      // Detect OS
+      let osName = 'Unknown';
+      let arch = 'x86_64';
+      
+      if (userAgent.includes('Win')) {
+        osName = 'Windows';
+        if (userAgent.includes('x64') || platform.includes('Win64')) {
+          arch = 'x86_64';
+        } else {
+          arch = 'x86';
+        }
+      } else if (userAgent.includes('Mac')) {
+        osName = 'Darwin';
+        if (userAgent.includes('Intel')) {
+          arch = 'x86_64';
+        } else if (userAgent.includes('Apple')) {
+          arch = 'arm64';
+        }
+      } else if (userAgent.includes('Linux')) {
+        osName = 'Linux';
+      } else if (userAgent.includes('Android')) {
+        osName = 'Android';
+      } else if (userAgent.includes('iOS')) {
+        osName = 'iOS';
+      }
+      
+      // Get version info if available
+      const version = platform.includes('Win') ? '10.0' : '';
+      const unameStr = args.includes('-a') || args.length === 0
+        ? `${osName} ${platform} ${arch} ${version}`.trim()
+        : osName;
+      
+      return { output: [unameStr], cwd };
+    }
+
     case 'clear':
       return { output: [], cwd, clear: true };
 

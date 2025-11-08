@@ -70,7 +70,7 @@ export default function DesktopAppIcon({
   const iconSize = 56;
   const iconNode = (() => {
     if (React.isValidElement(app.icon)) {
-      return React.cloneElement(app.icon, { size: iconSize });
+      return React.cloneElement(app.icon, { size: iconSize } as any);
     }
     if (app.icon) {
       return app.icon;
