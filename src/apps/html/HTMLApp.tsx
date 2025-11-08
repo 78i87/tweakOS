@@ -410,52 +410,133 @@ function HTMLApp({ windowId, initialData }: AppComponentProps) {
       return;
     }
 
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        const currentContainer = containerRef.current;
-        if (!currentContainer || !currentContainer.innerHTML.trim()) {
-          console.warn(`[HTMLApp] Container not ready for ${containerClass}`);
-          return;
-        }
+    // Wait for DOM to be ready using MutationObserver
+    let scriptsScheduled = false;
+    const executeScriptsWhenReady = () => {
+      // Prevent multiple executions
+      if (scriptsScheduled) {
+        return true;
+      }
 
-        // Verify container is still in DOM
-        if (!currentContainer.isConnected) {
-          console.warn(`[HTMLApp] Container not connected to DOM for ${containerClass}`);
-          return;
-        }
+      const currentContainer = containerRef.current;
+      if (!currentContainer || !currentContainer.isConnected) {
+        return false;
+      }
 
-        console.log(`[HTMLApp] Executing ${extractedScripts.length} script(s) for ${containerClass} using scoped document`);
+      // Check if container has content
+      if (!currentContainer.innerHTML.trim()) {
+        return false;
+      }
 
-        // Create scoped document for this container
-        const scopedDoc = createScopedDocument(currentContainer);
+      scriptsScheduled = true;
 
-        // Execute each script with scoped document
-        extractedScripts.forEach((scriptContent, index) => {
-          if (!scriptContent || !scriptContent.trim()) {
+      // Wait a bit more to ensure all elements are parsed and rendered
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          const finalContainer = containerRef.current;
+          if (!finalContainer || !finalContainer.isConnected || !finalContainer.innerHTML.trim()) {
+            console.warn(`[HTMLApp] Container not ready after delay for ${containerClass}`);
+            scriptsScheduled = false;
             return;
           }
 
-          try {
-            // Pass scoped document, container, and other common globals
-            const executeScript = new Function(
-              'container',
-              'containerClass',
-              'document',
-              'window',
-              'console',
-              scriptContent
-            );
-            executeScript(currentContainer, containerClass, scopedDoc, window, console);
-            console.log(`[HTMLApp] Successfully executed script ${index + 1}/${extractedScripts.length} for ${containerClass}`);
-          } catch (error) {
-            console.error(`[HTMLApp] Error executing script ${index + 1}/${extractedScripts.length} for ${containerClass}:`, error);
-          }
-        });
+          console.log(`[HTMLApp] Executing ${extractedScripts.length} script(s) for ${containerClass} using scoped document`);
 
-        hasInitializedRef.current = true;
-        console.log(`[HTMLApp] Script initialization complete for ${containerClass}`);
-      }, 10);
-    });
+          // Create scoped document for this container
+          const scopedDoc = createScopedDocument(finalContainer);
+
+          // Track successful script executions
+          let successCount = 0;
+          const totalScripts = extractedScripts.filter(s => s && s.trim()).length;
+
+          // Execute each script with scoped document
+          extractedScripts.forEach((scriptContent, index) => {
+            if (!scriptContent || !scriptContent.trim()) {
+              return;
+            }
+
+            try {
+              // Pass scoped document, container, and other common globals
+              const executeScript = new Function(
+                'container',
+                'containerClass',
+                'document',
+                'window',
+                'console',
+                scriptContent
+              );
+              executeScript(finalContainer, containerClass, scopedDoc, window, console);
+              successCount++;
+              console.log(`[HTMLApp] Successfully executed script ${index + 1}/${extractedScripts.length} for ${containerClass}`);
+            } catch (error) {
+              // Check if it's a null addEventListener error
+              const errorMessage = error instanceof Error ? error.message : String(error);
+              if (errorMessage.includes('null') && (errorMessage.includes('addEventListener') || errorMessage.includes('Cannot read properties'))) {
+                console.warn(`[HTMLApp] Script ${index + 1} tried to access null element. Retrying after delay...`);
+                // Retry after a longer delay to ensure DOM is ready
+                setTimeout(() => {
+                  try {
+                    const retryContainer = containerRef.current;
+                    if (retryContainer && retryContainer.isConnected && retryContainer.innerHTML.trim()) {
+                      const retryScopedDoc = createScopedDocument(retryContainer);
+                      const retryScript = new Function(
+                        'container',
+                        'containerClass',
+                        'document',
+                        'window',
+                        'console',
+                        scriptContent
+                      );
+                      retryScript(retryContainer, containerClass, retryScopedDoc, window, console);
+                      successCount++;
+                      console.log(`[HTMLApp] Successfully executed script ${index + 1} on retry`);
+                    } else {
+                      console.warn(`[HTMLApp] Container not ready for retry of script ${index + 1}`);
+                    }
+                  } catch (retryError) {
+                    console.error(`[HTMLApp] Error executing script ${index + 1} on retry for ${containerClass}:`, retryError);
+                  }
+                }, 150);
+              } else {
+                console.error(`[HTMLApp] Error executing script ${index + 1}/${extractedScripts.length} for ${containerClass}:`, error);
+              }
+            }
+          });
+
+          hasInitializedRef.current = true;
+          console.log(`[HTMLApp] Script initialization complete for ${containerClass} (${successCount}/${totalScripts} scripts executed)`);
+        }, 50);
+      });
+
+      return true;
+    };
+
+    // Try to execute immediately
+    if (!executeScriptsWhenReady()) {
+      // If not ready, use MutationObserver to wait for DOM changes
+      const observer = new MutationObserver(() => {
+        if (executeScriptsWhenReady()) {
+          observer.disconnect();
+        }
+      });
+
+      observer.observe(container, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+
+      // Also set a timeout as fallback
+      const timeout = setTimeout(() => {
+        observer.disconnect();
+        executeScriptsWhenReady();
+      }, 500);
+
+      return () => {
+        observer.disconnect();
+        clearTimeout(timeout);
+      };
+    }
   }, [extractedScripts, containerClass, html]);
 
   return (
