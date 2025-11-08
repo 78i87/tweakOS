@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo } from 'react';
 import { useWindowStore } from './windowStore';
 
 export function useWindowActions() {
@@ -15,28 +14,16 @@ export function useWindowActions() {
   );
   const updateWindowSize = useWindowStore((state) => state.updateWindowSize);
 
-  return useMemo(
-    () => ({
-      openWindow,
-      closeWindow,
-      minimizeWindow,
-      maximizeWindow,
-      restoreWindow,
-      focusWindow,
-      updateWindowPosition,
-      updateWindowSize,
-    }),
-    [
-      openWindow,
-      closeWindow,
-      minimizeWindow,
-      maximizeWindow,
-      restoreWindow,
-      focusWindow,
-      updateWindowPosition,
-      updateWindowSize,
-    ]
-  );
+  return {
+    openWindow,
+    closeWindow,
+    minimizeWindow,
+    maximizeWindow,
+    restoreWindow,
+    focusWindow,
+    updateWindowPosition,
+    updateWindowSize,
+  };
 }
 
 export function useWindows() {

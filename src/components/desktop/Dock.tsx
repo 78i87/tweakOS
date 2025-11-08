@@ -9,8 +9,6 @@ export default function Dock() {
   const windows = useWindows();
   const { focusWindow, restoreWindow } = useWindowActions();
 
-  const runningWindows = windows;
-
   const handleWindowClick = (windowId: string, status: string) => {
     if (status === 'minimized') {
       restoreWindow(windowId);
@@ -20,9 +18,8 @@ export default function Dock() {
     }
   };
 
-  // Deduplicate windows by appId, keeping the first one for each app
   const uniqueRunningApps = Array.from(
-    new Map(runningWindows.map((w) => [w.appId, w])).values()
+    new Map(windows.map((w) => [w.appId, w])).values()
   );
 
   if (uniqueRunningApps.length === 0) {
@@ -30,7 +27,7 @@ export default function Dock() {
   }
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] flex gap-2">
+    <div className="fixed right-4 top-1/2 -translate-y-1/2 z-[100] flex flex-col gap-2">
       {uniqueRunningApps.map((win) => {
         const app = getApp(win.appId);
         return (
