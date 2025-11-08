@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Rnd } from 'react-rnd';
 import { getAIAgentService } from '@/lib/aiAgent';
 import { makeAppFromHTML } from '@/lib/appRegistry';
+import { getPromptPlaceholder } from '@/lib/promptText';
+import { useAnimatedText } from '@/hooks/useAnimatedText';
 import clsx from 'clsx';
 import './blob-indicator.css';
 
@@ -13,17 +15,41 @@ export default function PromptBar() {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [blobPosition, setBlobPosition] = useState({ x: 0, y: 0 });
+  const [showOverlay, setShowOverlay] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const didDragRef = useRef(false);
   const dragStartPositionRef = useRef({ x: 0, y: 0 });
+  
+  // Get placeholder text (reactive to localStorage changes)
+  const placeholderText = getPromptPlaceholder();
+  
+  // Animate placeholder text when overlay is shown
+  const animatedPlaceholderText = useAnimatedText(
+    placeholderText,
+    showOverlay && isModalOpen,
+    40
+  );
 
   useEffect(() => {
-    if (isModalOpen && inputRef.current) {
-      inputRef.current.focus();
+    if (!isModalOpen) {
+      // Reset overlay when modal closes
+      setShowOverlay(true);
     }
   }, [isModalOpen]);
+
+  // Focus input when modal opens
+  useEffect(() => {
+    if (isModalOpen && inputRef.current && showOverlay) {
+      // Small delay to ensure modal is rendered
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 0);
+    }
+  }, [isModalOpen, showOverlay]);
 
   useEffect(() => {
     if (inputRef.current) {
@@ -102,6 +128,7 @@ export default function PromptBar() {
         });
         
         setPrompt('');
+        setShowOverlay(true);
         setIsModalOpen(false);
       } else {
         setError(result.error);
@@ -123,12 +150,40 @@ export default function PromptBar() {
     }
   };
 
+  const handleFocus = () => {
+    if (prompt.trim()) {
+      setShowOverlay(false);
+    }
+  };
+
+  const handleBlur = () => {
+    if (!prompt.trim()) {
+      setShowOverlay(true);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setPrompt(e.target.value);
+    setError(null);
+    if (e.target.value.trim()) {
+      setShowOverlay(false);
+    } else {
+      setShowOverlay(true);
+    }
+  };
+
   const handleDoubleClick = () => {
     if (didDragRef.current) {
       didDragRef.current = false;
       return;
     }
     setIsModalOpen(true);
+    // Focus textarea immediately to show caret
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, 0);
   };
 
   const handleDragStart = () => {
@@ -211,34 +266,51 @@ export default function PromptBar() {
           }}
         >
           <form onSubmit={handleSubmit} className="relative">
-            <textarea
-              ref={inputRef}
-              value={prompt}
-              onChange={(e) => {
-                setPrompt(e.target.value);
-                setError(null);
-              }}
-              onKeyDown={handleKeyDown}
-              placeholder="Let's make something"
-              disabled={isLoading}
-              rows={1}
-              className={clsx(
-                'bg-transparent border-0 outline-none',
-                'text-xl font-bold tracking-wide',
-                'placeholder:text-gray-400',
-                'min-w-[400px] max-w-[600px]',
-                'resize-none overflow-y-auto',
-                'transition-all duration-200',
-                'leading-relaxed',
-                'prompt-bar-textarea',
-                isLoading && 'opacity-50 cursor-not-allowed animate-pulse'
+            <div className="relative">
+              <textarea
+                ref={inputRef}
+                value={prompt}
+                onChange={handleChange}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+                onKeyDown={handleKeyDown}
+                placeholder={showOverlay ? undefined : placeholderText}
+                disabled={isLoading}
+                rows={1}
+                className={clsx(
+                  'bg-transparent border-0 outline-none',
+                  'text-xl font-bold tracking-wide',
+                  'placeholder:text-gray-400',
+                  'min-w-[300px] max-w-[500px]',
+                  'resize-none overflow-y-auto',
+                  'transition-all duration-200',
+                  'leading-relaxed',
+                  'prompt-bar-textarea',
+                  isLoading && 'opacity-50 cursor-not-allowed animate-pulse'
+                )}
+                style={{ 
+                  color: 'var(--dark-brown-color)',
+                  caretColor: 'var(--dark-brown-color)',
+                  maxHeight: '200px' 
+                }}
+              />
+              {showOverlay && (
+                <div
+                  className={clsx(
+                    'absolute inset-0 pointer-events-none',
+                    'text-xl font-bold tracking-wide',
+                    'leading-relaxed',
+                    'whitespace-pre-wrap',
+                    'overflow-hidden'
+                  )}
+                  style={{
+                    color: 'rgba(47, 42, 34, 0.6)',
+                  }}
+                >
+                  {animatedPlaceholderText}
+                </div>
               )}
-              style={{ 
-                color: 'var(--dark-brown-color)',
-                caretColor: 'var(--dark-brown-color)',
-                maxHeight: '200px' 
-              }}
-            />
+            </div>
             
             {error && (
               <div 
