@@ -21,7 +21,7 @@ type TypewriterTextProps = {
   onComplete?: () => void;
 };
 
-function TypewriterText({ text, speed = 30, onComplete }: TypewriterTextProps) {
+function TypewriterText({ text, speed = 15, onComplete }: TypewriterTextProps) {
   const [displayedText, setDisplayedText] = useState('');
   const [isComplete, setIsComplete] = useState(false);
 
@@ -54,7 +54,7 @@ function TypewriterText({ text, speed = 30, onComplete }: TypewriterTextProps) {
   return <span>{displayedText}{!isComplete && <span className="animate-pulse">▊</span>}</span>;
 }
 
-export default function TerminalApp({ windowId }: AppComponentProps) {
+export default function TerminalApp({ windowId, initialData }: AppComponentProps) {
   const [input, setInput] = useState('');
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [cwd, setCwd] = useState('/sandbox');
@@ -65,6 +65,7 @@ export default function TerminalApp({ windowId }: AppComponentProps) {
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const startupRanRef = useRef(false);
+  const startupCompleteCallbackRanRef = useRef(false);
 
   useEffect(() => {
     // Guard against double execution in Strict Mode
@@ -103,7 +104,7 @@ export default function TerminalApp({ windowId }: AppComponentProps) {
         ]);
       }, delay);
       // Calculate delay: previous message typing time + pause
-      const typingTime = msg.length * 30; // 30ms per character
+      const typingTime = msg.length * 15; // 15ms per character
       delay += typingTime + 500; // 500ms pause between messages
     });
 
@@ -209,16 +210,27 @@ export default function TerminalApp({ windowId }: AppComponentProps) {
                   ]);
                   setAwaitingGUIExplain(true);
                   setShowInlineInput(true);
+                  
+                  // Call startup complete callback if provided (for intro flow)
+                  if (initialData?.onStartupComplete && !startupCompleteCallbackRanRef.current) {
+                    startupCompleteCallbackRanRef.current = true;
+                    // Wait for the typing animation to complete before calling callback
+                    const typingTime = 'Its not chronosOS? I\'ve never heard of that OS before. No wonder you cannot access the thought-stream. How do you even share experiences?'.length * 15;
+                    setTimeout(() => {
+                      initialData.onStartupComplete();
+                    }, typingTime + 500);
+                  }
+                  
                   // Focus input after a delay
                   setTimeout(() => {
                     inputRef.current?.focus();
                   }, 500);
                 }, 1000);
-              }, 'uname -a'.length * 20 + 200);
-            }, '...Impossible.'.length * 30 + 1000);
-          }, '...Impossible.'.length * 30 + 500);
+              }, 'uname -a'.length * 10 + 200);
+            }, '...Impossible.'.length * 15 + 1000);
+          }, '...Impossible.'.length * 15 + 500);
         }, 1000);
-      }, 'date'.length * 20 + 200);
+      }, 'date'.length * 10 + 200);
     }, delay + 1000);
   }, []);
 
@@ -273,7 +285,7 @@ export default function TerminalApp({ windowId }: AppComponentProps) {
             setTimeout(() => {
               inputRef.current?.focus();
             }, 100);
-          }, 'G. U. I. ... Define it.'.length * 30 + 500);
+          }, 'G. U. I. ... Define it.'.length * 15 + 500);
         }, 1000);
       }, 500);
       setInput('');
@@ -350,7 +362,7 @@ export default function TerminalApp({ windowId }: AppComponentProps) {
                 {entry.output.map((line, lineIdx) => (
                   <div key={lineIdx}>
                     {entry.typingText && entry.typingText === line ? (
-                      <TypewriterText text={line} speed={30} />
+                      <TypewriterText text={line} speed={15} />
                     ) : (
                       line
                     )}
@@ -365,7 +377,7 @@ export default function TerminalApp({ windowId }: AppComponentProps) {
                     {entry.isAI ? 'C:/Users/Chronos_AI>' : '>'}
                   </span>{' '}
                   {entry.isAI && entry.typingText ? (
-                    <TypewriterText text={entry.command} speed={20} />
+                    <TypewriterText text={entry.command} speed={10} />
                   ) : (
                     <span>{entry.command}</span>
                   )}
