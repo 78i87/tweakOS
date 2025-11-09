@@ -1,10 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AppComponentProps } from '@/lib/types';
 
 export default function NotepadApp({ windowId, initialData }: AppComponentProps) {
   const [content, setContent] = useState(initialData?.content || '');
+
+  useEffect(() => {
+    if (typeof initialData?.content === 'string') {
+      setContent(initialData.content);
+    }
+  }, [initialData?.content]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setContent(e.target.value);
