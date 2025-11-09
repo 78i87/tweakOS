@@ -1,11 +1,13 @@
 // Terminal command interpreter
 
 import { getVFS } from './vfs';
+import { LORE_CONTENT } from './lore';
 
 export type CommandResult = {
   output: string[];
   cwd: string;
   clear?: boolean;
+  openApp?: { appId: string; data?: any };
 };
 
 // Export known commands for checking if input is a command
@@ -27,6 +29,7 @@ export const KNOWN_COMMANDS = new Set([
   'date',
   'uname',
   'clear',
+  'tweak',
 ]);
 
 export function parseCommand(input: string): { command: string; args: string[] } {
@@ -99,6 +102,7 @@ export function executeCommand(
           '  rm <path>     - Remove file or directory',
           '  mv <src> <dst> - Move/rename file or directory',
           '  cp <src> <dst> - Copy file or directory',
+          '  tweak         - Show lore',
           '  clear         - Clear terminal',
         ],
         cwd,
@@ -327,6 +331,13 @@ export function executeCommand(
       
       return { output: [unameStr], cwd };
     }
+
+    case 'tweak':
+      return { 
+        output: [], 
+        cwd,
+        openApp: { appId: 'notepad', data: { content: LORE_CONTENT } }
+      };
 
     case 'clear':
       return { output: [], cwd, clear: true };

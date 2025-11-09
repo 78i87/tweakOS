@@ -5,11 +5,8 @@ import { AppComponentProps } from '@/lib/types';
 import { executeCommand, parseCommand, KNOWN_COMMANDS } from './terminalCore';
 import { initVfs } from './vfs';
 import { useWindowActions } from '@/lib/useWindowActions';
+import { openAppWindow } from '@/lib/appRegistry';
 
-// Helper function to speak GAI lines using ElevenLabs TTS
-// We support inline emotion tags (e.g., [whispers], [excited], [sarcastic]) in the input text.
-// These tags are parsed locally and removed before sending to TTS. We translate them into
-// ElevenLabs voice_settings to influence delivery, so the tags are not spoken aloud.
 type VoiceSettings = {
   stability: number;
   style: number;
@@ -709,6 +706,12 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
       }
 
       setCwd(result.cwd);
+      
+      // Handle app opening if requested
+      if (result.openApp) {
+        openAppWindow(result.openApp.appId, result.openApp.data);
+      }
+      
       if (!isAI) {
         setInput('');
         // Keep inline input visible after command execution
