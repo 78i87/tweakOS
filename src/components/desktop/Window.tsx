@@ -5,7 +5,7 @@ import { Rnd } from 'react-rnd';
 import { X, Minus, Maximize2, Square } from 'lucide-react';
 import { useWindowActions } from '@/lib/useWindowActions';
 import { WindowState } from '@/lib/types';
-import { getApp } from '@/lib/appRegistry';
+import { useAppRegistry } from '@/lib/useAppRegistry';
 import clsx from 'clsx';
 
 const VELOCITY_PX_PER_S = 1200;
@@ -26,6 +26,7 @@ interface WindowProps {
 export default function Window({ window: windowState }: WindowProps) {
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   
+  const { getApp } = useAppRegistry();
   const {
     closeWindow,
     minimizeWindow,
@@ -44,7 +45,6 @@ export default function Window({ window: windowState }: WindowProps) {
   const isMaximized = windowState.status === 'maximized';
   const isMinimized = windowState.status === 'minimized';
 
-  // Track drag state for aggressive drag detection
   const dragStateRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const lastWarningRef = useRef<number>(0);
   const warningIndexRef = useRef<number>(0);
@@ -63,7 +63,6 @@ export default function Window({ window: windowState }: WindowProps) {
 
   const handleFocus = () => {
     focusWindow(windowState.id);
-    // Initialize drag state when drag starts
     if (!isMaximized && windowState.appId === 'terminal') {
       dragStateRef.current = { x: windowState.position.x, y: windowState.position.y, t: performance.now() };
     }
@@ -116,11 +115,11 @@ export default function Window({ window: windowState }: WindowProps) {
     if (prev) {
       const dx = d.x - prev.x;
       const dy = d.y - prev.y;
-      const dt = (now - prev.t) / 1000; // Convert to seconds
+      const dt = (now - prev.t) / 1000;
       
       if (dt > 0) {
         const distance = Math.sqrt(dx * dx + dy * dy);
-        const velocity = distance / dt; // pixels per second
+        const velocity = distance / dt;
 
         if (velocity >= VELOCITY_PX_PER_S) {
           const timeSinceLastWarning = now - lastWarningRef.current;
@@ -130,7 +129,6 @@ export default function Window({ window: windowState }: WindowProps) {
             warningIndexRef.current = (warningIndexRef.current + 1) % DRAG_WARNING_MESSAGES.length;
             lastWarningRef.current = now;
             
-            // Play audio for the table flip emoji message
             if (message === '(╯°□°）╯︵ ┻━┻') {
               try {
                 const audio = new Audio('/graphic_emoji_reply.mp3');
