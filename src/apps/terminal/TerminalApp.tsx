@@ -560,12 +560,17 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
             // Wait for Chronos line to finish typing, then GAI speaks
             const chronos1TypingTime = chronos1.length * 15 + 500;
             
-            // Trigger the reveal 16 seconds after "a gui? whats that?" finishes typing
+            // Timing offsets relative to when jane-script.mp3 starts playing
+            // These offsets align with specific moments in the pre-recorded audio
+            const GUI_REVEAL_OFFSET_MS = 16000; // When to trigger the gradient reveal overlay animation
+            const CHRONOS2_OFFSET_MS = 17500; // When Chronos responds "woah. what is this..." after GAI speaks
+            
+            // Trigger the reveal at the specified offset after audio starts
             setTimeout(() => {
               if (initialData?.onStartReveal) {
                 initialData.onStartReveal();
               }
-            }, chronos1TypingTime + 16000);
+            }, chronos1TypingTime + GUI_REVEAL_OFFSET_MS);
             
             setTimeout(async () => {
               // Notify that TTS is starting
@@ -573,11 +578,11 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
                 initialData.onTTSStart();
               }
               
-              // Play the pre-recorded GAI script (includes all three lines)
+              // Play the pre-recorded GAI script (jane-script.mp3) - no API calls needed
               await playGAIScript();
             }, chronos1TypingTime);
               
-            // After 17.5 seconds after chronos1TypingTime, Chronos responds
+            // Chronos responds at the specified offset after audio starts
             setTimeout(() => {
               const chronos2 = 'woah. what is this...';
               setHistory((prev) => [
@@ -658,7 +663,7 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
                   }, 1000);
                 }, chronos3TypingTime);
               }, chronos2TypingTime);
-            }, chronos1TypingTime + 17500); // 17.5 seconds after chronos1TypingTime
+            }, chronos1TypingTime + CHRONOS2_OFFSET_MS);
           }, guiTypingTime);
         }, 1000);
       }, 500);

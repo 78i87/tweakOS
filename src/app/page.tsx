@@ -115,16 +115,15 @@ export default function Home() {
       {showDesktopUI && (
         <>
           <DesktopIcons />
-          <PromptBar />
           <Dock />
         </>
       )}
+      {/* Always show PromptBar - blob appears during intro when speaking */}
+      <PromptBar showBlob={true} shrinkWhenNotSpeaking={showIntro} />
       {showIntro && (
         <div
           className={`intro-overlay flex items-center justify-center ${overlayRevealing ? 'revealing' : ''}`}
         >
-          {/* Speaking blob over the brown overlay */}
-          <PromptBar showBlob shrinkWhenNotSpeaking />
           <button
             onClick={handleTerminalIconClick}
             className="flex flex-col items-center gap-4 p-6 rounded-lg transition-opacity hover:opacity-80 active:opacity-60 cursor-pointer"
