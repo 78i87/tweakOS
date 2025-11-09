@@ -24,7 +24,7 @@ Guidelines:
 - Output plain text only—no code blocks, no lists, no "Commands:" sections
 
 `;
-function buildTerminalContext(context: any): string {
+function buildTerminalContext(context: { cwd?: string; history?: string[]; fs?: Array<{ type: string; path: string; size?: number; preview?: string }> }): string {
   let contextStr = `Current working directory: ${context?.cwd || '/'}\n\n`;
 
   if (context?.history && Array.isArray(context.history) && context.history.length > 0) {
@@ -51,7 +51,13 @@ function buildTerminalContext(context: any): string {
   return contextStr;
 }
 
-function buildScreenshotContext(context: any): string {
+function buildScreenshotContext(context: {
+  capturedAt?: string;
+  viewport?: { width?: number; height?: number };
+  activeWindow?: { title?: string; appId?: string; aiView?: boolean };
+  browserUrl?: string;
+  openWindows?: Array<{ appId?: string; title?: string }>;
+}): string {
   if (!context || typeof context !== 'object') {
     return '';
   }
@@ -81,7 +87,7 @@ function buildScreenshotContext(context: any): string {
   if (Array.isArray(context.openWindows) && context.openWindows.length > 0) {
     const windowSummaries = context.openWindows
       .map(
-        (w: any) => `- ${w.title || w.appId || 'Unknown'} (${w.appId || 'app'})`
+        (w) => `- ${w.title || w.appId || 'Unknown'} (${w.appId || 'app'})`
       )
       .join('\n');
     lines.push(`Visible windows:\n${windowSummaries}`);
@@ -96,7 +102,6 @@ export async function POST(request: NextRequest) {
     const { messages, context, screenshot } = body ?? {};
 
     if (screenshot?.dataUrl) {
-      // Ignore messages when screenshot is present - screenshot mode is isolated
       if (messages && Array.isArray(messages) && messages.length > 0) {
         console.warn('[CLI AGENT API] Screenshot mode: ignoring messages array (screenshot processing is isolated)');
       }
@@ -117,7 +122,6 @@ export async function POST(request: NextRequest) {
       if (contextSummary) {
         promptPieces.push(`Interface telemetry:\n${contextSummary}`);
       }
-      // Emphasize active window focus if multiple windows exist
       const hasMultipleWindows = context?.openWindows && Array.isArray(context.openWindows) && context.openWindows.length > 1;
       if (hasMultipleWindows && context?.activeWindow) {
         promptPieces.push(`IMPORTANT: Focus your curiosity on the active window "${context.activeWindow.title || context.activeWindow.appId}". Other windows can be ignored unless they catch your eye.`);

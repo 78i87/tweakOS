@@ -32,7 +32,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { cliReply } = body ?? {};
 
-    // Validate cliReply is present
     if (!cliReply || typeof cliReply !== 'string' || !cliReply.trim()) {
       return NextResponse.json(
         { error: 'cliReply is required' },
@@ -82,7 +81,6 @@ Respond to Chronos's comment with your GUI perspective, contrasting with their t
     if ('error' in response) {
       const errorResponse = response as { error?: { message?: string } };
       console.error('[GUIreplyAgent API] Cerebras API error:', errorResponse.error?.message);
-      // Return a default contrarian reply on error
       return NextResponse.json({
         reply: "Oh Chronos, always seeing the world through text. There's so much more to see here.",
       });

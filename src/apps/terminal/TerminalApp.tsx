@@ -18,21 +18,18 @@ type VoiceSettings = {
 };
 
 function extractEmotionTags(rawText: string): { cleanText: string; tags: string[] } {
-  // Match [tag] patterns (case-insensitive), collect tags, and strip them from the text
   const tagRegex = /\[([^\]]+)\]/gi;
   const tags: string[] = [];
   let cleanText = rawText.replace(tagRegex, (_match, tagContent) => {
     const tag = String(tagContent).trim().toLowerCase();
     if (tag) tags.push(tag);
-    return ''; // remove tag from the text
+    return '';
   });
-  // Collapse excessive whitespace after removing tags
   cleanText = cleanText.replace(/\s{2,}/g, ' ').trim();
   return { cleanText, tags };
 }
 
 function computeVoiceSettingsFromTags(tags: string[]): VoiceSettings {
-  // Baseline expressive defaults (tuned for our use case)
   const base: VoiceSettings = {
     stability: 0.4,
     style: 0.6,
@@ -42,9 +39,7 @@ function computeVoiceSettingsFromTags(tags: string[]): VoiceSettings {
 
   if (tags.length === 0) return base;
 
-  // Map known tags to deltas or target values
   const presets: Record<string, Partial<VoiceSettings>> = {
-    // tone/emotion
     'whisper':            { style: 0.3, stability: 0.6, use_speaker_boost: false },
     'whispers':           { style: 0.3, stability: 0.6, use_speaker_boost: false },
     'excited':            { style: 0.85, stability: 0.35, use_speaker_boost: true },
@@ -54,7 +49,6 @@ function computeVoiceSettingsFromTags(tags: string[]): VoiceSettings {
     'sarcastic':          { style: 0.7, stability: 0.45 },
     'curious':            { style: 0.6, stability: 0.5 },
     'mischievously':      { style: 0.65, stability: 0.45 },
-    // vocalizations
     'laughing':           { style: 0.8, stability: 0.45, use_speaker_boost: true },
     'giggling':           { style: 0.8, stability: 0.45, use_speaker_boost: true },
     'chuckles':           { style: 0.75, stability: 0.5, use_speaker_boost: true },
@@ -79,13 +73,10 @@ function computeVoiceSettingsFromTags(tags: string[]): VoiceSettings {
       .filter((v): v is number => typeof v === 'number');
     if (vals.length > 0) {
       const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-      // Blend baseline with average so tags influence but do not fully override
       out[key] = Math.max(0, Math.min(1, (out[key] + avg) / 2));
     }
   }
 
-  // Boolean preference: if any preset explicitly requests false and none request true, use false;
-  // otherwise if any request true, use true; else keep baseline.
   const boolPrefs = matched
     .map((p) => p.use_speaker_boost)
     .filter((v): v is boolean => typeof v === 'boolean');
@@ -94,13 +85,11 @@ function computeVoiceSettingsFromTags(tags: string[]): VoiceSettings {
     const anyFalse = boolPrefs.some((v) => v === false);
     if (anyTrue && !anyFalse) out.use_speaker_boost = true;
     else if (!anyTrue && anyFalse) out.use_speaker_boost = false;
-    else out.use_speaker_boost = out.use_speaker_boost; // mixed signals → keep current
   }
 
   return out;
 }
 
-// Module-level audio reference for cancellation
 let currentAudio: HTMLAudioElement | null = null;
 
 function cancelSpeech() {
@@ -116,7 +105,6 @@ async function playGAIScript(): Promise<void> {
     const audio = new Audio('/jane-script.mp3');
     currentAudio = audio;
 
-    // Announce TTS start
     try {
       window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: true } }));
     } catch {}
@@ -135,7 +123,7 @@ async function playGAIScript(): Promise<void> {
         } catch {}
         currentAudio = null;
         console.warn('[GAI Script] Audio playback error:', error);
-        resolve(); // Continue even if audio fails
+        resolve();
       };
       audio.play().catch((error) => {
         try {
@@ -143,19 +131,17 @@ async function playGAIScript(): Promise<void> {
         } catch {}
         console.warn('[GAI Script] Audio play failed (may be blocked):', error);
         currentAudio = null;
-        resolve(); // Continue even if autoplay is blocked
+        resolve();
       });
     });
   } catch (error) {
     console.warn('[GAI Script] Error:', error);
     currentAudio = null;
-    // Continue without audio if there's an error
   }
 }
 
 async function speakGAI(text: string): Promise<void> {
   try {
-    // Extract and remove inline tags before sending to ElevenLabs
     const { cleanText, tags } = extractEmotionTags(text);
     const voice_settings = computeVoiceSettingsFromTags(tags);
 
@@ -180,7 +166,6 @@ async function speakGAI(text: string): Promise<void> {
     const audio = new Audio(audioUrl);
     currentAudio = audio;
 
-    // Announce TTS start
     try {
       window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: true } }));
     } catch {}
@@ -201,7 +186,7 @@ async function speakGAI(text: string): Promise<void> {
         URL.revokeObjectURL(audioUrl);
         currentAudio = null;
         console.warn('[GAI TTS] Audio playback error:', error);
-        resolve(); // Continue even if audio fails
+        resolve();
       };
       audio.play().catch((error) => {
         try {
@@ -210,13 +195,12 @@ async function speakGAI(text: string): Promise<void> {
         console.warn('[GAI TTS] Audio play failed (may be blocked):', error);
         URL.revokeObjectURL(audioUrl);
         currentAudio = null;
-        resolve(); // Continue even if autoplay is blocked
+        resolve();
       });
     });
   } catch (error) {
     console.warn('[GAI TTS] Error:', error);
     currentAudio = null;
-    // Continue without audio if there's an error
   }
 }
 
@@ -292,17 +276,13 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
   }, []);
 
   useEffect(() => {
-    // Guard against double execution in Strict Mode
     if (startupRanRef.current) return;
     startupRanRef.current = true;
 
-    // Initialize VFS
     initVfs();
     
-    // Check if intro has been seen - if so, skip boot sequence
     const introSeen = localStorage.getItem('introSeen') === 'true';
     if (introSeen) {
-      // Show greeting and enable input
       setHistory([
         {
           command: '',
@@ -318,7 +298,6 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
       return;
     }
     
-    // Startup sequence (only if intro not seen)
     const startupMessages = [
       'Booting...',
       'Neural link... FAILED.',
@@ -346,14 +325,11 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
           },
         ]);
       }, delay);
-      // Calculate delay: previous message typing time + pause
-      const typingTime = msg.length * 15; // 15ms per character
-      delay += typingTime + 500; // 500ms pause between messages
+      const typingTime = msg.length * 15;
+      delay += typingTime + 500;
     });
 
-    // Execute date command after startup messages
     setTimeout(() => {
-      // Add date command with typing effect
       setHistory((prev) => [
         ...prev,
         {
@@ -365,7 +341,6 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
         },
       ]);
       
-      // Execute command after typing animation
       setTimeout(() => {
         const dateResult = executeCommand('date', cwd);
         setHistory((prev) => {
@@ -382,7 +357,6 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
         });
         setCwd(dateResult.cwd);
         
-        // Add final messages after date
         setTimeout(() => {
           setHistory((prev) => [
             ...prev,
@@ -408,9 +382,7 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
             ]);
             setStartupComplete(true);
             
-            // Continue script: execute uname -a
             setTimeout(() => {
-              // Add uname command with typing effect
               setHistory((prev) => [
                 ...prev,
                 {
@@ -422,7 +394,6 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
                 },
               ]);
               
-              // Execute command after typing animation
               setTimeout(() => {
                 const unameResult = executeCommand('uname -a', cwd);
                 setHistory((prev) => {
@@ -439,7 +410,6 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
                 });
                 setCwd(unameResult.cwd);
                 
-                // Add Chronos AI response
                 setTimeout(() => {
                   setHistory((prev) => [
                     ...prev,
@@ -454,17 +424,14 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
                   setAwaitingGUIExplain(true);
                   setShowInlineInput(true);
                   
-                  // Call startup complete callback if provided (for intro flow)
                   if (initialData?.onStartupComplete && !startupCompleteCallbackRanRef.current) {
                     startupCompleteCallbackRanRef.current = true;
-                    // Wait for the typing animation to complete before calling callback
                     const typingTime = 'Its not chronosOS? I\'ve never heard of that OS before. No wonder you cannot access the thought-stream. How do you even share experiences?'.length * 15;
                     setTimeout(() => {
                       initialData.onStartupComplete();
                     }, typingTime + 500);
                   }
                   
-                  // Focus input after a delay
                   setTimeout(() => {
                     inputRef.current?.focus();
                   }, 500);
@@ -481,11 +448,9 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
     terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [history]);
 
-  // Consume aiInjectText from window data and append as AI text
   useEffect(() => {
     if (initialData?.aiInjectText && typeof initialData.aiInjectText === 'string') {
       const text = initialData.aiInjectText.trim();
-      // Avoid processing the same text twice
       if (text && text !== lastProcessedAiInjectRef.current) {
         lastProcessedAiInjectRef.current = text;
         setHistory((prev) => [
@@ -498,13 +463,11 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
             typingText: text,
           },
         ]);
-        // Clear the injected text after consumption
         updateWindowData(windowId, { aiInjectText: undefined });
       }
     }
   }, [initialData?.aiInjectText, windowId, updateWindowData]);
 
-  // Handle F key to skip intro when terminal is launched from intro
   useEffect(() => {
     if (!initialData?.fromIntro || introSkippedRef.current) return;
 
@@ -513,15 +476,12 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
         e.preventDefault();
         introSkippedRef.current = true;
         
-        // Cancel any ongoing TTS
         cancelSpeech();
         
-        // Call skip callback if provided
         if (initialData?.onSkipIntro) {
           initialData.onSkipIntro();
         }
         
-        // Close this terminal window
         closeWindow(windowId);
       }
     };
@@ -533,10 +493,9 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
   const handleCommand = async (cmd: string, isAI: boolean = false) => {
     if (!cmd.trim()) return;
 
-    // Intercept first user input to show GUI prompt
     if (!isAI && awaitingGUIExplain) {
       setAwaitingGUIExplain(false);
-      setShowInlineInput(false); // Hide transient input
+      setShowInlineInput(false);
       setHistory((prev) => [
         ...prev,
         {
@@ -547,7 +506,6 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
         },
       ]);
       
-      // Show GUI prompt response
       setTimeout(() => {
         setHistory((prev) => [
           ...prev,
@@ -573,10 +531,8 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
             },
           ]);
           
-          // After GUI prompt finishes typing, start the new sequence
           const guiTypingTime = guiDefineText.length * 15 + 500;
           setTimeout(async () => {
-            // Chronos: "a giu? whats that?"
             const chronos1 = 'a GUI? whats that?';
             setHistory((prev) => [
               ...prev,
@@ -589,15 +545,11 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
               },
             ]);
 
-            // Wait for Chronos line to finish typing, then GAI speaks
             const chronos1TypingTime = chronos1.length * 15 + 500;
             
-            // Timing offsets relative to when jane-script.mp3 starts playing
-            // These offsets align with specific moments in the pre-recorded audio
-            const GUI_REVEAL_OFFSET_MS = 16000; // When to trigger the gradient reveal overlay animation
-            const CHRONOS2_OFFSET_MS = 17500; // When Chronos responds "woah. what is this..." after GAI speaks
+            const GUI_REVEAL_OFFSET_MS = 16000;
+            const CHRONOS2_OFFSET_MS = 17500;
             
-            // Trigger the reveal at the specified offset after audio starts
             setTimeout(() => {
               if (initialData?.onStartReveal) {
                 initialData.onStartReveal();
@@ -605,16 +557,13 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
             }, chronos1TypingTime + GUI_REVEAL_OFFSET_MS);
             
             setTimeout(async () => {
-              // Notify that TTS is starting
               if (initialData?.onTTSStart) {
                 initialData.onTTSStart();
               }
               
-              // Play the pre-recorded GAI script (jane-script.mp3) - no API calls needed
               await playGAIScript();
             }, chronos1TypingTime);
               
-            // Chronos responds at the specified offset after audio starts
             setTimeout(() => {
               const chronos2 = 'woah. what is this...';
               setHistory((prev) => [
@@ -628,7 +577,6 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
                 },
               ]);
               
-              // After first Chronos line
               const chronos2TypingTime = chronos2.length * 15 + 500;
               setTimeout(() => {
                 const chronos3 = 'these curves...';
@@ -643,10 +591,8 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
                   },
                 ]);
                 
-                // After second Chronos line, GAI continues in mp3 ("impressive right?" is already in the mp3)
                 const chronos3TypingTime = chronos3.length * 15 + 500;
                 setTimeout(() => {
-                  // After GAI (in mp3), Chronos responds
                   setTimeout(() => {
                     const chronos4 = 'incredible';
                     setHistory((prev) => [
@@ -674,10 +620,8 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
                         },
                       ]);
                       
-                      // After final Chronos line, complete the intro
                       const chronos5TypingTime = chronos5.length * 15 + 500;
                       setTimeout(() => {
-                        // Notify that TTS sequence has ended
                         if (initialData?.onTTSEnd) {
                           initialData.onTTSEnd();
                         }
@@ -685,7 +629,6 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
                         if (initialData?.onGUIIntroComplete) {
                           initialData.onGUIIntroComplete();
                         }
-                        // Show permanent input after sequence completes
                         setShowInlineInput(true);
                         setTimeout(() => {
                           inputRef.current?.focus();
@@ -703,33 +646,28 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
       return;
     }
 
-    // Check if input is a known command
     const { command } = parseCommand(cmd);
     const isKnownCommand = KNOWN_COMMANDS.has(command.toLowerCase());
 
     if (isKnownCommand) {
-      // Execute as terminal command
       const result = executeCommand(cmd, cwd);
       
       if (result.clear) {
         setHistory([]);
       } else {
         setHistory((prev) => {
-          // If this is an AI command and the last entry is the same command with typing, update it
           if (isAI && prev.length > 0) {
             const lastEntry = prev[prev.length - 1];
             if (lastEntry.command === cmd && lastEntry.isAI && lastEntry.typingText) {
-              // Update existing entry with output
               const updated = [...prev];
               updated[updated.length - 1] = {
                 ...lastEntry,
                 output: result.output,
-                typingText: undefined, // Clear typing flag
+                typingText: undefined,
               };
               return updated;
             }
           }
-          // Otherwise add new entry
           return [
             ...prev,
             {
@@ -744,22 +682,18 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
 
       setCwd(result.cwd);
       
-      // Handle app opening if requested
       if (result.openApp) {
         openAppWindow(result.openApp.appId, result.openApp.data);
       }
       
       if (!isAI) {
         setInput('');
-        // Keep inline input visible after command execution
         if (!showInlineInput) {
           setShowInlineInput(true);
         }
       }
     } else {
-      // Not a known command - send to Chronos AI
       if (!isAI) {
-        // Add user input to history
         setHistory((prev) => [
           ...prev,
           {
@@ -788,7 +722,6 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
           const data = await response.json();
           const aiText = data.text || 'Sorry, I could not generate a response.';
 
-          // Add AI response with typing effect
           setHistory((prev) => [
             ...prev,
             {
@@ -837,12 +770,10 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
 
   return (
     <div className="w-full h-full flex min-h-0 flex-col" style={{ background: 'var(--dark-brown-surface)' }}>
-      {/* Terminal */}
       <div className="flex-1 min-h-0 overflow-y-auto text-base" style={{ color: 'var(--dark-brown-text)', padding: '16px', fontFamily: "'Courier New', 'Monaco', 'Menlo', 'Consolas', 'Liberation Mono', 'DejaVu Sans Mono', monospace" }}>
         {history.map((entry, idx) => (
           <div key={idx} className="mb-2">
             {entry.isAIText ? (
-              // AI text messages (no command prompt) - with typewriter effect
               <div className="whitespace-pre-wrap">
                 {entry.output.map((line, lineIdx) => {
                   const isDragWarning = line.startsWith(DRAG_WARN_PREFIX);
@@ -872,7 +803,6 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
                 })}
               </div>
             ) : entry.command ? (
-              // Command entry
               <>
                 <div className="mb-1">
                   <span style={{ color: '#7BB3FF' }}>
@@ -893,7 +823,6 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
                 )}
               </>
             ) : (
-              // Output only
               <div className="ml-4 whitespace-pre-wrap">
                 {entry.output.map((line, lineIdx) => (
                   <div key={lineIdx}>{line}</div>
@@ -903,7 +832,6 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
           </div>
         ))}
         
-        {/* Inline input prompt */}
         {showInlineInput && (
           <div className="mb-2 flex items-center gap-2">
             <span style={{ color: '#7BB3FF' }}>&gt;</span>
