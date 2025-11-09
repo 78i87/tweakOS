@@ -251,10 +251,18 @@ textarea::placeholder {
   inset: 0;
   z-index: 1000;
   pointer-events: none;
+  opacity: 1;
+  transition: opacity 400ms ease;
 }
 
 .intro-overlay button {
   pointer-events: auto;
+}
+
+.intro-overlay.fade-out {
+  opacity: 0;
+  /* Slow fade-out - stays visible much longer while iridescence fades in */
+  transition: opacity 8000ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .intro-overlay.revealing {
@@ -277,4 +285,14 @@ textarea::placeholder {
 
 .pause-on-hover:hover .pulse-slow {
   animation-play-state: paused;
+}
+
+/* Iridescence fullscreen overlay for OGL shader - appears under windows */
+.iridescence-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  width: 100vw;
+  height: 100vh;
 }

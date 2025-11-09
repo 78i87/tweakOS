@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect } from 'react';
 import '@/apps/manifest';
 
 import Desktop from '@/components/desktop/Desktop';
 import DesktopIcons from '@/components/desktop/DesktopIcons';
 import Dock from '@/components/desktop/Dock';
 import PromptBar from '@/components/desktop/PromptBar';
+import IridescenceOverlay from '@/components/desktop/IridescenceOverlay';
 import { useAppRegistry } from '@/lib/useAppRegistry';
 import { useWindowActions, useWindows } from '@/lib/useWindowActions';
 import { TerminalSquare } from 'lucide-react';
@@ -17,27 +18,32 @@ export default function Home() {
   const [introComplete, setIntroComplete] = useState(false);
   const [terminalWindowCentered, setTerminalWindowCentered] = useState(false);
   const [overlayRevealing, setOverlayRevealing] = useState(false);
+  const [showIridescenceIntro, setShowIridescenceIntro] = useState(false);
+  const [introOverlayFading, setIntroOverlayFading] = useState(false);
   const { openAppWindow } = useAppRegistry();
   const { updateWindowPosition, updateWindowSize, closeWindow } = useWindowActions();
   const windows = useWindows();
 
-  useEffect(() => {
-    // Check if intro has been seen before
+  useLayoutEffect(() => {
+    // Check if intro has been seen before - decide before first paint
     const introSeen = localStorage.getItem('introSeen');
     if (!introSeen) {
+      // Show terminal icon overlay first - iridescence will trigger from onStartReveal (~16s)
       setShowIntro(true);
+      setShowIridescenceIntro(false);
     } else {
       setShowDesktopUI(true);
     }
   }, []);
 
   useEffect(() => {
-    // Handle F key to skip intro
+    // Handle F key to skip intro (works for both iridescence and terminal intro)
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (showIntro && (e.key === 'F' || e.key === 'f')) {
+      if ((showIntro || showIridescenceIntro) && (e.key === 'F' || e.key === 'f')) {
         e.preventDefault();
         localStorage.setItem('introSeen', 'true');
         setShowIntro(false);
+        setShowIridescenceIntro(false);
         setShowDesktopUI(true);
         // Close any terminal window that might have been opened
         const terminalWindow = windows.find(
@@ -49,11 +55,11 @@ export default function Home() {
       }
     };
 
-    if (showIntro) {
+    if (showIntro || showIridescenceIntro) {
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
     }
-  }, [showIntro, windows, closeWindow]);
+  }, [showIntro, showIridescenceIntro, windows, closeWindow]);
 
   useEffect(() => {
     // Find terminal window opened from intro and center it (only once)
@@ -77,12 +83,15 @@ export default function Home() {
     openAppWindow('terminal', {
       fromIntro: true,
       onStartReveal: () => {
-        // Trigger the gradient reveal animation
-        setOverlayRevealing(true);
-        // Remove overlay after animation completes
+        // Start both overlays simultaneously for smooth crossfade
+        // Brown overlay fades out slowly (8 seconds) while iridescence fades in (3 seconds)
+        setShowIridescenceIntro(true);
+        setIntroOverlayFading(true);
+        // After brown overlay fade completes (8 seconds), unmount it
         setTimeout(() => {
           setShowIntro(false);
-        }, 1400); // Match animation duration
+          setIntroOverlayFading(false);
+        }, 8000); // Match the 8-second fade-out duration
       },
       onStartupComplete: () => {
         // Wait 4 seconds after script completion
@@ -119,10 +128,23 @@ export default function Home() {
         </>
       )}
       {/* Always show PromptBar - blob appears during intro when speaking */}
-      <PromptBar showBlob={true} shrinkWhenNotSpeaking={showIntro} />
+      <PromptBar showBlob={true} shrinkWhenNotSpeaking={showIntro || showIridescenceIntro} />
+      {/* Iridescence intro overlay - OGL shader effect */}
+      {showIridescenceIntro && (
+        <IridescenceOverlay
+          startNow={true}
+          mouseReact={false}
+          onComplete={() => {
+            setShowIridescenceIntro(false);
+            // After iridescence effect completes, terminal flow continues
+            // Desktop will show after onStartupComplete callback
+          }}
+        />
+      )}
+      {/* Terminal icon overlay - crossfades with iridescence overlay */}
       {showIntro && (
         <div
-          className={`intro-overlay flex items-center justify-center ${overlayRevealing ? 'revealing' : ''}`}
+          className={`intro-overlay flex items-center justify-center ${overlayRevealing ? 'revealing' : ''} ${introOverlayFading ? 'fade-out' : ''}`}
         >
           <button
             onClick={handleTerminalIconClick}

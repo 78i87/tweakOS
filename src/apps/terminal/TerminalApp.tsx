@@ -119,7 +119,28 @@ async function playGAIScript(): Promise<void> {
     } catch {}
 
     await new Promise<void>((resolve) => {
+      let pauseTimeout: NodeJS.Timeout | null = null;
+      let resumeTimeout: NodeJS.Timeout | null = null;
+      
+      // Pause audio at 16 seconds
+      pauseTimeout = setTimeout(() => {
+        if (audio && !audio.paused) {
+          audio.pause();
+          // Wait 2 seconds, then resume
+          resumeTimeout = setTimeout(() => {
+            if (audio && currentAudio === audio) {
+              audio.play().catch((error) => {
+                console.warn('[GAI Script] Audio resume failed:', error);
+              });
+            }
+          }, 2000);
+        }
+      }, 16000);
+
       audio.onended = () => {
+        // Clean up timeouts if audio ends naturally
+        if (pauseTimeout) clearTimeout(pauseTimeout);
+        if (resumeTimeout) clearTimeout(resumeTimeout);
         try {
           window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: false } }));
         } catch {}
@@ -127,6 +148,9 @@ async function playGAIScript(): Promise<void> {
         resolve();
       };
       audio.onerror = (error) => {
+        // Clean up timeouts on error
+        if (pauseTimeout) clearTimeout(pauseTimeout);
+        if (resumeTimeout) clearTimeout(resumeTimeout);
         try {
           window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: false } }));
         } catch {}
@@ -135,6 +159,9 @@ async function playGAIScript(): Promise<void> {
         resolve(); // Continue even if audio fails
       };
       audio.play().catch((error) => {
+        // Clean up timeouts if play fails
+        if (pauseTimeout) clearTimeout(pauseTimeout);
+        if (resumeTimeout) clearTimeout(resumeTimeout);
         try {
           window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: false } }));
         } catch {}
@@ -562,7 +589,7 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
             
             // Timing offsets relative to when jane-script.mp3 starts playing
             // These offsets align with specific moments in the pre-recorded audio
-            const GUI_REVEAL_OFFSET_MS = 16000; // When to trigger the gradient reveal overlay animation
+            const GUI_REVEAL_OFFSET_MS = 12000; // When to trigger the gradient reveal overlay animation
             const CHRONOS2_OFFSET_MS = 17500; // When Chronos responds "woah. what is this..." after GAI speaks
             
             // Trigger the reveal at the specified offset after audio starts
@@ -597,7 +624,7 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
               ]);
               
               // After first Chronos line
-              const chronos2TypingTime = chronos2.length * 15 + 500;
+              const chronos2TypingTime = chronos2.length * 17 + 500;
               setTimeout(() => {
                 const chronos3 = 'these curves...';
                 setHistory((prev) => [

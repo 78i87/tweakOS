@@ -23,6 +23,8 @@ export default function PromptBar({ showBlob = true, shrinkWhenNotSpeaking = fal
   const [showOverlay, setShowOverlay] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [hasSpoken, setHasSpoken] = useState(false);
+  const [isBlobAppearing, setIsBlobAppearing] = useState(true); // Track if blob is first appearing
+  const [isBlobZooming, setIsBlobZooming] = useState(false); // Track if blob is zooming out
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -75,11 +77,36 @@ export default function PromptBar({ showBlob = true, shrinkWhenNotSpeaking = fal
       setIsSpeaking(speaking);
       if (speaking) {
         setHasSpoken(true);
+        // If blob is appearing for the first time, trigger zoom animation
+        if (isBlobAppearing) {
+          setIsBlobAppearing(false);
+          setIsBlobZooming(true);
+          // Remove zooming class after animation completes
+          setTimeout(() => {
+            setIsBlobZooming(false);
+          }, 600);
+        }
       }
     };
     window.addEventListener('gai-tts', handler as EventListener);
     return () => window.removeEventListener('gai-tts', handler as EventListener);
-  }, []);
+  }, [isBlobAppearing]);
+
+  // On initial appearance, zoom the blob from tiny dot to normal size
+  useEffect(() => {
+    if (!isBlobAppearing) return;
+    // Start zoom on next frame to ensure initial small state is applied
+    const rafId = requestAnimationFrame(() => {
+      setIsBlobZooming(true);
+      // After animation completes, clear flags
+      const timeout = setTimeout(() => {
+        setIsBlobZooming(false);
+        setIsBlobAppearing(false);
+      }, 650);
+      return () => clearTimeout(timeout);
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [isBlobAppearing]);
 
   useEffect(() => {
     setBlobPosition({
@@ -293,7 +320,9 @@ export default function PromptBar({ showBlob = true, shrinkWhenNotSpeaking = fal
             <div className={clsx(
               'blob-indicator w-20 h-20',
               (isLoading || isSpeaking) && 'blob-thinking',
-              shrinkWhenNotSpeaking && !isSpeaking && !isLoading && 'blob-shrunk'
+              shrinkWhenNotSpeaking && !isSpeaking && !isLoading && 'blob-shrunk',
+              isBlobAppearing && 'blob-appearing',
+              isBlobZooming && 'blob-zooming'
             )}>
               <div></div>
               <div></div>
