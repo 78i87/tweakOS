@@ -320,6 +320,7 @@ export default function PromptBar({ showBlob = true, shrinkWhenNotSpeaking = fal
             <div className={clsx(
               'blob-indicator w-20 h-20',
               (isLoading || isSpeaking) && 'blob-thinking',
+              (isLoading || isSpeaking) && 'blob-active',
               shrinkWhenNotSpeaking && !isSpeaking && !isLoading && 'blob-shrunk',
               isBlobAppearing && 'blob-appearing',
               isBlobZooming && 'blob-zooming'

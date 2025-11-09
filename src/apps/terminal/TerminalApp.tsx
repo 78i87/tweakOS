@@ -7,6 +7,7 @@ import { initVfs } from './vfs';
 import { useWindowActions } from '@/lib/useWindowActions';
 import { openAppWindow } from '@/lib/appRegistry';
 import { preloadTypingSound, playTypingSound } from '@/lib/typingSound';
+import { attachAudioActivity } from '@/lib/audioActivity';
 
 const DRAG_WARN_PREFIX = '[DRAG_WARN] ';
 
@@ -116,7 +117,18 @@ async function playGAIScript(): Promise<void> {
     const audio = new Audio('/jane-script.mp3');
     currentAudio = audio;
 
-    // Announce TTS start
+    // Attach audio activity detector for real-time speech/silence detection
+    const dispatchSpeaking = (speaking: boolean) => {
+      try {
+        window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking } }));
+      } catch {}
+    };
+    const cleanupActivity = attachAudioActivity(audio, {
+      onSpeakingStart: () => dispatchSpeaking(true),
+      onSpeakingStop: () => dispatchSpeaking(false),
+    });
+
+    // Announce TTS start (fallback)
     try {
       window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: true } }));
     } catch {}
@@ -144,6 +156,7 @@ async function playGAIScript(): Promise<void> {
         // Clean up timeouts if audio ends naturally
         if (pauseTimeout) clearTimeout(pauseTimeout);
         if (resumeTimeout) clearTimeout(resumeTimeout);
+        cleanupActivity();
         try {
           window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: false } }));
         } catch {}
@@ -154,6 +167,7 @@ async function playGAIScript(): Promise<void> {
         // Clean up timeouts on error
         if (pauseTimeout) clearTimeout(pauseTimeout);
         if (resumeTimeout) clearTimeout(resumeTimeout);
+        cleanupActivity();
         try {
           window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: false } }));
         } catch {}
@@ -165,6 +179,7 @@ async function playGAIScript(): Promise<void> {
         // Clean up timeouts if play fails
         if (pauseTimeout) clearTimeout(pauseTimeout);
         if (resumeTimeout) clearTimeout(resumeTimeout);
+        cleanupActivity();
         try {
           window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: false } }));
         } catch {}
@@ -207,13 +222,25 @@ async function speakGAI(text: string): Promise<void> {
     const audio = new Audio(audioUrl);
     currentAudio = audio;
 
-    // Announce TTS start
+    // Attach audio activity detector for real-time speech/silence detection
+    const dispatchSpeaking = (speaking: boolean) => {
+      try {
+        window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking } }));
+      } catch {}
+    };
+    const cleanupActivity = attachAudioActivity(audio, {
+      onSpeakingStart: () => dispatchSpeaking(true),
+      onSpeakingStop: () => dispatchSpeaking(false),
+    });
+
+    // Announce TTS start (fallback)
     try {
       window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: true } }));
     } catch {}
 
     await new Promise<void>((resolve, reject) => {
       audio.onended = () => {
+        cleanupActivity();
         try {
           window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: false } }));
         } catch {}
@@ -222,6 +249,7 @@ async function speakGAI(text: string): Promise<void> {
         resolve();
       };
       audio.onerror = (error) => {
+        cleanupActivity();
         try {
           window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: false } }));
         } catch {}
@@ -231,6 +259,7 @@ async function speakGAI(text: string): Promise<void> {
         resolve(); // Continue even if audio fails
       };
       audio.play().catch((error) => {
+        cleanupActivity();
         try {
           window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: false } }));
         } catch {}

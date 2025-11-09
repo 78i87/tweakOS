@@ -246,3 +246,10 @@
   transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.6s ease-out;
 }
 
+/* Dark blue active state when speaking or generating */
+.blob-indicator.blob-active > div {
+  background: #5C5CFF; /* dark blue */
+  box-shadow: 0px 0px 50px rgba(53, 82, 162, 0.6);
+  transition: background 180ms ease, box-shadow 180ms ease;
+}
+

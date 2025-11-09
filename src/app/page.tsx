@@ -10,6 +10,7 @@ import PromptBar from '@/components/desktop/PromptBar';
 import IridescenceOverlay from '@/components/desktop/IridescenceOverlay';
 import { useAppRegistry } from '@/lib/useAppRegistry';
 import { useWindowActions, useWindows } from '@/lib/useWindowActions';
+import { attachAudioActivity } from '@/lib/audioActivity';
 import { TerminalSquare, Camera } from 'lucide-react';
 
 export default function Home() {
@@ -247,8 +248,18 @@ export default function Home() {
       const audio = new Audio(audioUrl);
       guiReplyAudioRef.current = audio;
 
+      // Attach audio activity detector for real-time speech/silence detection
+      const dispatchSpeaking = (speaking: boolean) => {
+        window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking } }));
+      };
+      const cleanupActivity = attachAudioActivity(audio, {
+        onSpeakingStart: () => dispatchSpeaking(true),
+        onSpeakingStop: () => dispatchSpeaking(false),
+      });
+
       await new Promise<void>((resolve) => {
         audio.onended = () => {
+          cleanupActivity();
           window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: false } }));
           URL.revokeObjectURL(audioUrl);
           guiReplyAudioRef.current = null;
@@ -256,6 +267,7 @@ export default function Home() {
           resolve();
         };
         audio.onerror = (error) => {
+          cleanupActivity();
           console.warn('[GUIreplyAgent TTS] Audio playback error:', error);
           window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: false } }));
           URL.revokeObjectURL(audioUrl);
@@ -264,6 +276,7 @@ export default function Home() {
           resolve();
         };
         audio.play().catch((error) => {
+          cleanupActivity();
           console.warn('[GUIreplyAgent TTS] Audio play failed:', error);
           window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: false } }));
           URL.revokeObjectURL(audioUrl);
