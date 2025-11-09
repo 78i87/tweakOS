@@ -906,6 +906,7 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
                   
                   return (
                     <div key={lineIdx}>
+                      <span style={{ color: '#7BB3FF' }}>$</span>{' '}
                       {entry.typingText && entry.typingText === line ? (
                         isDragWarning ? (
                           <span style={{ color: '#ff3b30', fontWeight: 700 }}>
@@ -920,7 +921,7 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
                             {displayText}
                           </span>
                         ) : (
-                          line
+                          displayText
                         )
                       )}
                     </div>
@@ -931,13 +932,15 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
               // Command entry
               <>
                 <div className="mb-1">
-                  <span style={{ color: '#7BB3FF' }}>
-                    {entry.isAI ? 'C:/Users/Chronos_AI>' : '>'}
+                  <span style={{ color: entry.isAI ? '#7BB3FF' : '#4EC9B0' }}>
+                    {entry.isAI ? '$ C:/Users/Chronos_AI>' : '>'}
                   </span>{' '}
                   {entry.isAI && entry.typingText ? (
-                    <TypewriterText text={entry.command} speed={10} />
+                    <span style={{ color: '#FFD700' }}>
+                      <TypewriterText text={entry.command} speed={10} />
+                    </span>
                   ) : (
-                    <span>{entry.command}</span>
+                    <span style={{ color: '#FFD700' }}>{entry.command}</span>
                   )}
                 </div>
                 {entry.output.length > 0 && (
@@ -962,7 +965,7 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
         {/* Inline input prompt */}
         {showInlineInput && (
           <div className="mb-2 flex items-center gap-2">
-            <span style={{ color: '#7BB3FF' }}>&gt;</span>
+            <span style={{ color: '#4EC9B0' }}>&gt;</span>
             <input
               ref={inputRef}
               type="text"
