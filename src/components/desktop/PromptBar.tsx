@@ -310,7 +310,7 @@ export default function PromptBar({ showBlob = true, shrinkWhenNotSpeaking = fal
           onDragStop={handleDragStop}
           enableResizing={false}
           bounds="window"
-          style={{ position: 'absolute', zIndex: isSpeaking ? 1200 : 90 }}
+          style={{ position: 'absolute', zIndex: 9999 }}
         >
           <div 
             ref={containerRef}
@@ -349,7 +349,7 @@ export default function PromptBar({ showBlob = true, shrinkWhenNotSpeaking = fal
       {isModalOpen && (
         <div
           ref={modalRef}
-          className="fixed z-[100] transition-all duration-300 ease-out"
+          className="fixed z-[9999] transition-all duration-300 ease-out"
           style={{
             top: `${blobPosition.y + 40}px`,
             right: `${window.innerWidth - blobPosition.x - -30}px`,
