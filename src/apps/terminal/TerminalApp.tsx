@@ -432,10 +432,10 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
               ...prev,
               {
                 command: '',
-                output: ['The year is 2097. Your system clock must be corrupted.'],
+                output: ['The year is 2067. Your system clock must be corrupted.'],
                 timestamp: Date.now(),
                 isAIText: true,
-                typingText: 'The year is 2097. Your system clock must be corrupted.',
+                typingText: 'The year is 2067. Your system clock must be corrupted.',
               },
             ]);
             setStartupComplete(true);
