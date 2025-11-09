@@ -6,6 +6,9 @@ import { executeCommand, parseCommand, KNOWN_COMMANDS } from './terminalCore';
 import { initVfs } from './vfs';
 import { useWindowActions } from '@/lib/useWindowActions';
 import { openAppWindow } from '@/lib/appRegistry';
+import { preloadTypingSound, playTypingSound } from '@/lib/typingSound';
+
+const DRAG_WARN_PREFIX = '[DRAG_WARN] ';
 
 type VoiceSettings = {
   stability: number;
@@ -279,6 +282,7 @@ function TypewriterText({ text, speed = 15, onComplete }: TypewriterTextProps) {
     const typeInterval = setInterval(() => {
       if (currentIndex < text.length) {
         setDisplayedText(text.slice(0, currentIndex + 1));
+        void playTypingSound();
         currentIndex++;
       } else {
         clearInterval(typeInterval);
@@ -307,7 +311,12 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
   const startupRanRef = useRef(false);
   const startupCompleteCallbackRanRef = useRef(false);
   const introSkippedRef = useRef(false);
-  const { closeWindow } = useWindowActions();
+  const lastProcessedAiInjectRef = useRef<string | null>(null);
+  const { closeWindow, updateWindowData } = useWindowActions();
+
+  useEffect(() => {
+    preloadTypingSound().catch(() => {});
+  }, []);
 
   useEffect(() => {
     // Guard against double execution in Strict Mode
@@ -498,6 +507,29 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
   useEffect(() => {
     terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [history]);
+
+  // Consume aiInjectText from window data and append as AI text
+  useEffect(() => {
+    if (initialData?.aiInjectText && typeof initialData.aiInjectText === 'string') {
+      const text = initialData.aiInjectText.trim();
+      // Avoid processing the same text twice
+      if (text && text !== lastProcessedAiInjectRef.current) {
+        lastProcessedAiInjectRef.current = text;
+        setHistory((prev) => [
+          ...prev,
+          {
+            command: '',
+            output: [text],
+            timestamp: Date.now(),
+            isAIText: true,
+            typingText: text,
+          },
+        ]);
+        // Clear the injected text after consumption
+        updateWindowData(windowId, { aiInjectText: undefined });
+      }
+    }
+  }, [initialData?.aiInjectText, windowId, updateWindowData]);
 
   // Handle F key to skip intro when terminal is launched from intro
   useEffect(() => {
@@ -839,15 +871,32 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
             {entry.isAIText ? (
               // AI text messages (no command prompt) - with typewriter effect
               <div className="whitespace-pre-wrap">
-                {entry.output.map((line, lineIdx) => (
-                  <div key={lineIdx}>
-                    {entry.typingText && entry.typingText === line ? (
-                      <TypewriterText text={line} speed={15} />
-                    ) : (
-                      line
-                    )}
-                  </div>
-                ))}
+                {entry.output.map((line, lineIdx) => {
+                  const isDragWarning = line.startsWith(DRAG_WARN_PREFIX);
+                  const displayText = isDragWarning ? line.slice(DRAG_WARN_PREFIX.length) : line;
+                  
+                  return (
+                    <div key={lineIdx}>
+                      {entry.typingText && entry.typingText === line ? (
+                        isDragWarning ? (
+                          <span style={{ color: '#ff3b30', fontWeight: 700 }}>
+                            <TypewriterText text={displayText} speed={15} />
+                          </span>
+                        ) : (
+                          <TypewriterText text={displayText} speed={15} />
+                        )
+                      ) : (
+                        isDragWarning ? (
+                          <span style={{ color: '#ff3b30', fontWeight: 700 }}>
+                            {displayText}
+                          </span>
+                        ) : (
+                          line
+                        )
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ) : entry.command ? (
               // Command entry

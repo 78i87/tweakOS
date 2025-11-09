@@ -1,4 +1,4 @@
-const DEFAULT_PROMPT_PLACEHOLDER = "Let's make something";
+const DEFAULT_PROMPT_PLACEHOLDER = "Let's imagine...";
 const STORAGE_KEY = 'prompt.placeholder';
 
 export function getPromptPlaceholder(): string {

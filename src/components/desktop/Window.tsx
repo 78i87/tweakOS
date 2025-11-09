@@ -1,12 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Rnd } from 'react-rnd';
 import { X, Minus, Maximize2, Square } from 'lucide-react';
 import { useWindowActions } from '@/lib/useWindowActions';
 import { WindowState } from '@/lib/types';
 import { getApp } from '@/lib/appRegistry';
 import clsx from 'clsx';
+
+const VELOCITY_PX_PER_S = 1200;
+const COOLDOWN_MS = 1200;
+const DRAG_WARN_PREFIX = '[DRAG_WARN] ';
+
+const DRAG_WARNING_MESSAGES = [
+  'Hey! Stop dragging me around!',
+  'Easy there! I\'m getting dizzy.',
+  'Careful! I\'m sensitive to sudden moves.',
+  '(╯°□°）╯︵ ┻━┻'
+];
 
 interface WindowProps {
   window: WindowState;
@@ -23,6 +34,7 @@ export default function Window({ window: windowState }: WindowProps) {
     focusWindow,
     updateWindowPosition,
     updateWindowSize,
+    updateWindowData,
   } = useWindowActions();
 
   const app = getApp(windowState.appId);
@@ -31,6 +43,11 @@ export default function Window({ window: windowState }: WindowProps) {
   const AppComponent = app.component;
   const isMaximized = windowState.status === 'maximized';
   const isMinimized = windowState.status === 'minimized';
+
+  // Track drag state for aggressive drag detection
+  const dragStateRef = useRef<{ x: number; y: number; t: number } | null>(null);
+  const lastWarningRef = useRef<number>(0);
+  const warningIndexRef = useRef<number>(0);
 
   useEffect(() => {
     const updateSize = () => {
@@ -46,6 +63,10 @@ export default function Window({ window: windowState }: WindowProps) {
 
   const handleFocus = () => {
     focusWindow(windowState.id);
+    // Initialize drag state when drag starts
+    if (!isMaximized && windowState.appId === 'terminal') {
+      dragStateRef.current = { x: windowState.position.x, y: windowState.position.y, t: performance.now() };
+    }
   };
 
   const handleMinimize = () => {
@@ -84,10 +105,59 @@ export default function Window({ window: windowState }: WindowProps) {
     e.preventDefault();
   };
 
+  const handleDrag = (_e: unknown, d: { x: number; y: number }) => {
+    if (isMaximized || windowState.appId !== 'terminal') {
+      return;
+    }
+
+    const now = performance.now();
+    const prev = dragStateRef.current;
+
+    if (prev) {
+      const dx = d.x - prev.x;
+      const dy = d.y - prev.y;
+      const dt = (now - prev.t) / 1000; // Convert to seconds
+      
+      if (dt > 0) {
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const velocity = distance / dt; // pixels per second
+
+        if (velocity >= VELOCITY_PX_PER_S) {
+          const timeSinceLastWarning = now - lastWarningRef.current;
+          
+          if (timeSinceLastWarning >= COOLDOWN_MS) {
+            const message = DRAG_WARNING_MESSAGES[warningIndexRef.current];
+            warningIndexRef.current = (warningIndexRef.current + 1) % DRAG_WARNING_MESSAGES.length;
+            lastWarningRef.current = now;
+            
+            // Play audio for the table flip emoji message
+            if (message === '(╯°□°）╯︵ ┻━┻') {
+              try {
+                const audio = new Audio('/graphic_emoji_reply.mp3');
+                audio.play().catch((error) => {
+                  console.debug('Could not play graphic emoji reply sound:', error);
+                });
+              } catch (error) {
+                console.debug('Could not create audio for graphic emoji reply sound:', error);
+              }
+            }
+            
+            updateWindowData(windowState.id, {
+              aiInjectText: DRAG_WARN_PREFIX + message,
+            });
+          }
+        }
+      }
+    }
+
+    dragStateRef.current = { x: d.x, y: d.y, t: now };
+  };
+
   const handleDragStop = (_e: unknown, d: { x: number; y: number }) => {
     if (!isMaximized) {
       updateWindowPosition(windowState.id, { x: d.x, y: d.y });
     }
+    dragStateRef.current = null;
   };
 
   const handleResizeStop = (
@@ -118,6 +188,7 @@ export default function Window({ window: windowState }: WindowProps) {
     <Rnd
       size={isMaximized ? maximizedSize : windowState.size}
       position={isMaximized ? { x: 0, y: 0 } : windowState.position}
+      onDrag={handleDrag}
       onDragStop={handleDragStop}
       onResizeStop={handleResizeStop}
       onDragStart={handleFocus}
