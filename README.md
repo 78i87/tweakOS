@@ -1,4 +1,4 @@
-# Web OS
+# Tweak OS
 
 ## Inspiration
 The theme was "When Worlds Collide". So we decided to see how an AI agent from the future would act with an AI agent of today if they coexisted on the same desktop\. The thing is, the AI agent from the future has never heard of a GUI, seemingly because of brain\-chip developments\.
