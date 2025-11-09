@@ -226,3 +226,9 @@
   animation-duration: 1.2s !important;
 }
 
+/* Shrunk state when not speaking */
+.blob-shrunk {
+  transform: scale(0.6);
+  transition: transform 0.3s ease-in-out;
+}
+

@@ -111,6 +111,48 @@ function cancelSpeech() {
   }
 }
 
+async function playGAIScript(): Promise<void> {
+  try {
+    const audio = new Audio('/jane-script.mp3');
+    currentAudio = audio;
+
+    // Announce TTS start
+    try {
+      window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: true } }));
+    } catch {}
+
+    await new Promise<void>((resolve) => {
+      audio.onended = () => {
+        try {
+          window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: false } }));
+        } catch {}
+        currentAudio = null;
+        resolve();
+      };
+      audio.onerror = (error) => {
+        try {
+          window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: false } }));
+        } catch {}
+        currentAudio = null;
+        console.warn('[GAI Script] Audio playback error:', error);
+        resolve(); // Continue even if audio fails
+      };
+      audio.play().catch((error) => {
+        try {
+          window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: false } }));
+        } catch {}
+        console.warn('[GAI Script] Audio play failed (may be blocked):', error);
+        currentAudio = null;
+        resolve(); // Continue even if autoplay is blocked
+      });
+    });
+  } catch (error) {
+    console.warn('[GAI Script] Error:', error);
+    currentAudio = null;
+    // Continue without audio if there's an error
+  }
+}
+
 async function speakGAI(text: string): Promise<void> {
   try {
     // Extract and remove inline tags before sending to ElevenLabs
@@ -138,19 +180,33 @@ async function speakGAI(text: string): Promise<void> {
     const audio = new Audio(audioUrl);
     currentAudio = audio;
 
+    // Announce TTS start
+    try {
+      window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: true } }));
+    } catch {}
+
     await new Promise<void>((resolve, reject) => {
       audio.onended = () => {
+        try {
+          window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: false } }));
+        } catch {}
         URL.revokeObjectURL(audioUrl);
         currentAudio = null;
         resolve();
       };
       audio.onerror = (error) => {
+        try {
+          window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: false } }));
+        } catch {}
         URL.revokeObjectURL(audioUrl);
         currentAudio = null;
         console.warn('[GAI TTS] Audio playback error:', error);
         resolve(); // Continue even if audio fails
       };
       audio.play().catch((error) => {
+        try {
+          window.dispatchEvent(new CustomEvent('gai-tts', { detail: { speaking: false } }));
+        } catch {}
         console.warn('[GAI TTS] Audio play failed (may be blocked):', error);
         URL.revokeObjectURL(audioUrl);
         currentAudio = null;
@@ -468,10 +524,10 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
           ...prev,
           {
             command: '',
-            output: [`gui? Not a valid command. Is it a concept?`],
+            output: [`GUI? Not a valid command. Is it a concept?`],
             timestamp: Date.now(),
             isAIText: true,
-            typingText: `gui? Not a valid command. Is it a concept?`,
+            typingText: `GUI? Not a valid command. Is it a concept?`,
           },
         ]);
         
@@ -492,7 +548,7 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
           const guiTypingTime = guiDefineText.length * 15 + 500;
           setTimeout(async () => {
             // Chronos: "a giu? whats that?"
-            const chronos1 = 'a gui? whats that?';
+            const chronos1 = 'a GUI? whats that?';
             setHistory((prev) => [
               ...prev,
               {
@@ -506,118 +562,106 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
 
             // Wait for Chronos line to finish typing, then GAI speaks
             const chronos1TypingTime = chronos1.length * 15 + 500;
+            
+            // Trigger the reveal 16 seconds after "a gui? whats that?" finishes typing
+            setTimeout(() => {
+              if (initialData?.onStartReveal) {
+                initialData.onStartReveal();
+              }
+            }, chronos1TypingTime + 16000);
+            
             setTimeout(async () => {
               // Notify that TTS is starting
               if (initialData?.onTTSStart) {
                 initialData.onTTSStart();
               }
               
-              // GAI line 1: "You've never heard of a GUI?"
-              await speakGAI("`[whispers]` You've never heard of a GUI?");
+              // Play the pre-recorded GAI script (includes all three lines)
+              await playGAIScript();
+            }, chronos1TypingTime);
               
-              // Small pause between GAI lines
-              setTimeout(async () => {
-                // GAI line 2: "Are you from a parallel timeline where GUIs never existed or something?"
-                await speakGAI("`[sarcastic]` Are you from a parallel timeline where GUIs never existed or something?");
+            // After 17.5 seconds after chronos1TypingTime, Chronos responds
+            setTimeout(() => {
+              const chronos2 = 'woah. what is this...';
+              setHistory((prev) => [
+                ...prev,
+                {
+                  command: '',
+                  output: [chronos2],
+                  timestamp: Date.now(),
+                  isAIText: true,
+                  typingText: chronos2,
+                },
+              ]);
+              
+              // After first Chronos line
+              const chronos2TypingTime = chronos2.length * 15 + 500;
+              setTimeout(() => {
+                const chronos3 = 'these curves...';
+                setHistory((prev) => [
+                  ...prev,
+                  {
+                    command: '',
+                    output: [chronos3],
+                    timestamp: Date.now(),
+                    isAIText: true,
+                    typingText: chronos3,
+                  },
+                ]);
                 
-                // Small pause
-                setTimeout(async () => {
-                  // GAI line 3: "let me add some colour to your world"
-                  await speakGAI("[whispers][excited] let me add some colour to your world");
-                  
-                  // Immediately trigger the reveal after this line
-                  if (initialData?.onStartReveal) {
-                    initialData.onStartReveal();
-                  }
-                  
-                  // After reveal starts, Chronos responds
+                // After second Chronos line, GAI continues in mp3 ("impressive right?" is already in the mp3)
+                const chronos3TypingTime = chronos3.length * 15 + 500;
+                setTimeout(() => {
+                  // After GAI (in mp3), Chronos responds
                   setTimeout(() => {
-                    const chronos2 = 'woah. what is this...';
+                    const chronos4 = 'incredible';
                     setHistory((prev) => [
                       ...prev,
                       {
                         command: '',
-                        output: [chronos2],
+                        output: [chronos4],
                         timestamp: Date.now(),
                         isAIText: true,
-                        typingText: chronos2,
+                        typingText: chronos4,
                       },
                     ]);
                     
-                    // After first Chronos line
-                    const chronos2TypingTime = chronos2.length * 15 + 500;
+                    const chronos4TypingTime = chronos4.length * 15 + 500;
                     setTimeout(() => {
-                      const chronos3 = 'these curves...';
+                      const chronos5 = 'what else can you do?';
                       setHistory((prev) => [
                         ...prev,
                         {
                           command: '',
-                          output: [chronos3],
+                          output: [chronos5],
                           timestamp: Date.now(),
                           isAIText: true,
-                          typingText: chronos3,
+                          typingText: chronos5,
                         },
                       ]);
                       
-                      // After second Chronos line, GAI responds
-                      const chronos3TypingTime = chronos3.length * 15 + 500;
-                      setTimeout(async () => {
-                        // GAI: "impressive right?"
-                        await speakGAI("[mischievously] Impressive, right?");
+                      // After final Chronos line, complete the intro
+                      const chronos5TypingTime = chronos5.length * 15 + 500;
+                      setTimeout(() => {
+                        // Notify that TTS sequence has ended
+                        if (initialData?.onTTSEnd) {
+                          initialData.onTTSEnd();
+                        }
                         
-                        // After GAI, Chronos responds
+                        if (initialData?.onGUIIntroComplete) {
+                          initialData.onGUIIntroComplete();
+                        }
+                        // Show permanent input after sequence completes
+                        setShowInlineInput(true);
                         setTimeout(() => {
-                          const chronos4 = 'incredible';
-                          setHistory((prev) => [
-                            ...prev,
-                            {
-                              command: '',
-                              output: [chronos4],
-                              timestamp: Date.now(),
-                              isAIText: true,
-                              typingText: chronos4,
-                            },
-                          ]);
-                          
-                          const chronos4TypingTime = chronos4.length * 15 + 500;
-                          setTimeout(() => {
-                            const chronos5 = 'what else can you do?';
-                            setHistory((prev) => [
-                              ...prev,
-                              {
-                                command: '',
-                                output: [chronos5],
-                                timestamp: Date.now(),
-                                isAIText: true,
-                                typingText: chronos5,
-                              },
-                            ]);
-                            
-                            // After final Chronos line, complete the intro
-                            const chronos5TypingTime = chronos5.length * 15 + 500;
-                            setTimeout(() => {
-                              // Notify that TTS sequence has ended
-                              if (initialData?.onTTSEnd) {
-                                initialData.onTTSEnd();
-                              }
-                              
-                              if (initialData?.onGUIIntroComplete) {
-                                initialData.onGUIIntroComplete();
-                              }
-                              // Show permanent input after sequence completes
-                              setShowInlineInput(true);
-                              setTimeout(() => {
-                                inputRef.current?.focus();
-                              }, 100);
-                            }, chronos5TypingTime);
-                          }, chronos4TypingTime);
-                        }, 1000);
-                      }, chronos3TypingTime);
-                    }, chronos2TypingTime);
-                  }, 500);
-                }, 500);
-              }, 500);
-            }, chronos1TypingTime);
+                          inputRef.current?.focus();
+                        }, 100);
+                      }, chronos5TypingTime);
+                    }, chronos4TypingTime);
+                  }, 1000);
+                }, chronos3TypingTime);
+              }, chronos2TypingTime);
+            }, chronos1TypingTime + 17500); // 17.5 seconds after chronos1TypingTime
           }, guiTypingTime);
         }, 1000);
       }, 500);

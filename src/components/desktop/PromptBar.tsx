@@ -11,15 +11,18 @@ import './blob-indicator.css';
 
 type PromptBarProps = {
   showBlob?: boolean;
+  shrinkWhenNotSpeaking?: boolean;
 };
 
-export default function PromptBar({ showBlob = true }: PromptBarProps) {
+export default function PromptBar({ showBlob = true, shrinkWhenNotSpeaking = false }: PromptBarProps) {
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [blobPosition, setBlobPosition] = useState({ x: 0, y: 0 });
   const [showOverlay, setShowOverlay] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [hasSpoken, setHasSpoken] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -63,6 +66,19 @@ export default function PromptBar({ showBlob = true }: PromptBarProps) {
       inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 200)}px`;
     }
   }, [prompt, isModalOpen]);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const customEvent = e as CustomEvent<{ speaking: boolean }>;
+      const speaking = !!customEvent?.detail?.speaking;
+      setIsSpeaking(speaking);
+      if (speaking) {
+        setHasSpoken(true);
+      }
+    };
+    window.addEventListener('gai-tts', handler as EventListener);
+    return () => window.removeEventListener('gai-tts', handler as EventListener);
+  }, []);
 
   useEffect(() => {
     setBlobPosition({
@@ -247,23 +263,24 @@ export default function PromptBar({ showBlob = true }: PromptBarProps) {
         </defs>
       </svg>
 
-      {showBlob && (
+      {showBlob && (!shrinkWhenNotSpeaking || hasSpoken) && (
         <Rnd
           position={blobPosition}
           onDragStart={handleDragStart}
           onDragStop={handleDragStop}
           enableResizing={false}
           bounds="window"
-          style={{ position: 'absolute' }}
+          style={{ position: 'absolute', zIndex: isSpeaking ? 1200 : 90 }}
         >
           <div 
             ref={containerRef}
-            className="cursor-move z-[90]"
+            className="cursor-move"
             onDoubleClick={handleDoubleClick}
           >
             <div className={clsx(
               'blob-indicator w-20 h-20',
-              isLoading && 'blob-thinking'
+              (isLoading || isSpeaking) && 'blob-thinking',
+              shrinkWhenNotSpeaking && !isSpeaking && !isLoading && 'blob-shrunk'
             )}>
               <div></div>
               <div></div>
