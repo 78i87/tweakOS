@@ -8,6 +8,8 @@ import { useWindowActions } from '@/lib/useWindowActions';
 import { openAppWindow } from '@/lib/appRegistry';
 import { preloadTypingSound, playTypingSound } from '@/lib/typingSound';
 
+const DRAG_WARN_PREFIX = '[DRAG_WARN] ';
+
 type VoiceSettings = {
   stability: number;
   style: number;
@@ -842,15 +844,32 @@ export default function TerminalApp({ windowId, initialData }: AppComponentProps
             {entry.isAIText ? (
               // AI text messages (no command prompt) - with typewriter effect
               <div className="whitespace-pre-wrap">
-                {entry.output.map((line, lineIdx) => (
-                  <div key={lineIdx}>
-                    {entry.typingText && entry.typingText === line ? (
-                      <TypewriterText text={line} speed={15} />
-                    ) : (
-                      line
-                    )}
-                  </div>
-                ))}
+                {entry.output.map((line, lineIdx) => {
+                  const isDragWarning = line.startsWith(DRAG_WARN_PREFIX);
+                  const displayText = isDragWarning ? line.slice(DRAG_WARN_PREFIX.length) : line;
+                  
+                  return (
+                    <div key={lineIdx}>
+                      {entry.typingText && entry.typingText === line ? (
+                        isDragWarning ? (
+                          <span style={{ color: '#ff3b30', fontWeight: 700 }}>
+                            <TypewriterText text={displayText} speed={15} />
+                          </span>
+                        ) : (
+                          <TypewriterText text={displayText} speed={15} />
+                        )
+                      ) : (
+                        isDragWarning ? (
+                          <span style={{ color: '#ff3b30', fontWeight: 700 }}>
+                            {displayText}
+                          </span>
+                        ) : (
+                          line
+                        )
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ) : entry.command ? (
               // Command entry
